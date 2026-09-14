@@ -1,0 +1,255 @@
+@import "tailwindcss";
+
+/* ==========================================================================
+   BOUGE. — Design system
+   Toutes les valeurs proviennent du document « BOUGE. Brand Guidelines v1.0 ».
+   Rien n'est réinterprété : couleurs (p.21), typographies (p.24), ton (p.12).
+   ========================================================================== */
+
+@theme {
+  /* --- Couleurs primaires (Brand Guidelines p.21) --- */
+  --color-anthracite: #232323;
+  --color-creme: #fffbe8;
+  --color-orange: #e26129;
+
+  /* --- Couleurs secondaires --- */
+  --color-jade: #439677;
+  --color-brun: #59443a;
+  --color-ciel: #69acde;
+  --color-blanc: #ffffff;
+
+  /* --- Déclinaisons utilitaires (dérivées, jamais inventées) --- */
+  --color-anthracite-900: #171717;
+  --color-anthracite-800: #1d1d1d;
+  --color-anthracite-700: #2e2e2e;
+  --color-anthracite-600: #3a3a3a;
+  --color-creme-dim: #f2ecd6;
+  --color-orange-dark: #c24e1d;
+  --color-jade-dark: #33755c;
+
+  /* --- Typographies (Brand Guidelines p.24) ---
+     Sun Motter    : titres, prises de parole impactantes
+     Manrope       : sous-titres + corps de texte
+     Reenie Beanie : notes manuscrites, « la main de Melvin » */
+  /* Repli sur Manrope (la seconde police de la charte) plutôt que sur une
+     police système : Sun Motter ne contient pas « ? », « — », « … », « € »
+     ni « Œ », et ces caractères doivent rester dans l'univers de la marque. */
+  --font-display: var(--font-sun-motter), var(--font-manrope), "Arial Black", sans-serif;
+  --font-sans: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
+  --font-hand: var(--font-reenie), "Bradley Hand", cursive;
+
+  /* --- Échelle typographique fluide ---
+     Interpolation continue entre 375px (petit mobile) et 1920px (grand écran).
+     Aucun palier brusque : la taille suit la largeur du viewport en continu. */
+  --text-2xs: clamp(0.69rem, 0.66rem + 0.13vw, 0.78rem);
+  --text-xs: clamp(0.78rem, 0.75rem + 0.15vw, 0.88rem);
+  --text-sm: clamp(0.88rem, 0.84rem + 0.18vw, 1rem);
+  --text-base: clamp(1rem, 0.95rem + 0.22vw, 1.13rem);
+  --text-lg: clamp(1.13rem, 1.04rem + 0.36vw, 1.35rem);
+  --text-xl: clamp(1.3rem, 1.16rem + 0.58vw, 1.65rem);
+  --text-2xl: clamp(1.5rem, 1.27rem + 0.97vw, 2.1rem);
+  --text-3xl: clamp(1.8rem, 1.42rem + 1.6vw, 2.8rem);
+  --text-4xl: clamp(2.15rem, 1.56rem + 2.5vw, 3.7rem);
+  --text-5xl: clamp(2.6rem, 1.68rem + 3.9vw, 5rem);
+  --text-6xl: clamp(3rem, 1.6rem + 5.9vw, 6.6rem);
+  --text-7xl: clamp(3.4rem, 1.2rem + 9.3vw, 9rem);
+
+  /* --- Espacements fluides --- */
+  --spacing-fluid-1: clamp(0.5rem, 0.45rem + 0.2vw, 0.7rem);
+  --spacing-fluid-2: clamp(0.85rem, 0.75rem + 0.4vw, 1.2rem);
+  --spacing-fluid-3: clamp(1.25rem, 1rem + 1vw, 2rem);
+  --spacing-fluid-4: clamp(2rem, 1.5rem + 2vw, 3.5rem);
+  --spacing-fluid-5: clamp(3rem, 2rem + 4vw, 6rem);
+  --spacing-fluid-6: clamp(4rem, 2.5rem + 6vw, 9rem);
+
+  --radius-blob: 2.25rem;
+
+  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-spring: cubic-bezier(0.34, 1.4, 0.64, 1);
+}
+
+/* ==========================================================================
+   Base
+   ========================================================================== */
+
+@layer base {
+  * {
+    min-width: 0; /* évite les débordements horizontaux en flex/grid */
+  }
+
+  html {
+    scroll-behavior: smooth;
+    /* Décale les ancres sous la navbar fixe */
+    scroll-padding-top: clamp(4.5rem, 4rem + 2vw, 6rem);
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: var(--color-creme);
+    color: var(--color-anthracite);
+    font-family: var(--font-sans);
+    font-size: var(--text-base);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: clip; /* aucun scroll horizontal parasite, quel que soit l'écran */
+  }
+
+  h1, h2, h3, h4,
+  .font-display {
+    font-family: var(--font-display);
+    font-weight: 400; /* Sun Motter est déjà très grasse par construction */
+    line-height: 0.95;
+    letter-spacing: 0.005em;
+    text-wrap: balance;
+    /* Sun Motter est une police capitale : ses minuscules accentuées (à, é, ç…)
+       sont dessinées SANS accent, alors que les capitales accentuées (À, É, Ç)
+       existent bien. Passer le texte en capitales via CSS fait correspondre
+       « à » à « À » et restitue donc tous les accents du français. */
+    text-transform: uppercase;
+  }
+
+  /* La police manuscrite garde sa casse : c'est tout son intérêt. */
+  .font-hand {
+    text-transform: none;
+    letter-spacing: 0;
+  }
+
+  p { text-wrap: pretty; }
+
+  ::selection {
+    background-color: var(--color-orange);
+    color: var(--color-creme);
+  }
+
+  :focus-visible {
+    outline: 3px solid var(--color-orange);
+    outline-offset: 3px;
+    border-radius: 4px;
+  }
+
+  /* Cible tactile minimale de 44px sur les contrôles (recommandation WCAG 2.5.5),
+     indispensable pour le tunnel de réservation au doigt. */
+  button, a[role="button"], input, select, textarea {
+    font: inherit;
+  }
+
+  input, select, textarea {
+    /* iOS zoome sur les champs sous 16px : on ne descend jamais en dessous. */
+    font-size: max(16px, var(--text-base));
+  }
+}
+
+/* ==========================================================================
+   Composants transverses
+   ========================================================================== */
+
+@layer components {
+  /* Conteneur fluide : marge latérale minimale garantie à toutes les largeurs. */
+  .u-container {
+    width: 100%;
+    max-width: 82rem;
+    margin-inline: auto;
+    padding-inline: clamp(1.15rem, 0.7rem + 2.2vw, 3rem);
+  }
+
+  .u-container-wide {
+    width: 100%;
+    max-width: 104rem;
+    margin-inline: auto;
+    padding-inline: clamp(1.15rem, 0.7rem + 2.2vw, 3rem);
+  }
+
+  /* Section verticale à rythme fluide */
+  .u-section {
+    padding-block: var(--spacing-fluid-6);
+  }
+
+  /* Le « surlignage » orange derrière un mot de titre */
+  .u-mark {
+    background-image: linear-gradient(transparent 58%, var(--color-orange) 58%, var(--color-orange) 94%, transparent 94%);
+    background-repeat: no-repeat;
+    background-size: 0% 100%;
+    transition: background-size 0.7s var(--ease-out-soft) 0.15s;
+  }
+  .is-revealed .u-mark { background-size: 100% 100%; }
+
+  /* Carte « papier » de la marque */
+  .u-card {
+    background-color: var(--color-blanc);
+    border: 1.5px solid color-mix(in srgb, var(--color-anthracite) 12%, transparent);
+    border-radius: 1.5rem;
+  }
+
+  .u-card-dark {
+    background-color: var(--color-anthracite-800);
+    border: 1.5px solid color-mix(in srgb, var(--color-creme) 12%, transparent);
+    border-radius: 1.5rem;
+    color: var(--color-creme);
+  }
+
+  /* Texture grain, appliquée sur les grands aplats sombres */
+  .u-grain::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.32;
+    mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
+  }
+
+  /* Masque de lisibilité sous la vidéo du hero */
+  .u-hero-scrim {
+    background:
+      radial-gradient(120% 90% at 50% 45%, color-mix(in srgb, var(--color-anthracite) 20%, transparent) 0%, color-mix(in srgb, var(--color-anthracite) 72%, transparent) 70%, var(--color-anthracite) 100%),
+      linear-gradient(to bottom, color-mix(in srgb, var(--color-anthracite) 65%, transparent) 0%, transparent 28%, transparent 55%, color-mix(in srgb, var(--color-anthracite) 88%, transparent) 100%);
+  }
+}
+
+/* ==========================================================================
+   Animations
+   ========================================================================== */
+
+@keyframes u-marquee {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(-50%, 0, 0); }
+}
+
+@keyframes u-float {
+  0%, 100% { transform: translate3d(0, 0, 0) rotate(var(--float-rot, 0deg)); }
+  50% { transform: translate3d(0, -12px, 0) rotate(calc(var(--float-rot, 0deg) + 2deg)); }
+}
+
+@keyframes u-spin-slow {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes u-pulse-ring {
+  0% { transform: scale(1); opacity: 0.55; }
+  70% { transform: scale(1.7); opacity: 0; }
+  100% { transform: scale(1.7); opacity: 0; }
+}
+
+@keyframes u-fade-up {
+  from { opacity: 0; transform: translate3d(0, 24px, 0); }
+  to { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+
+.u-marquee-track { animation: u-marquee 38s linear infinite; }
+.u-float { animation: u-float 6s ease-in-out infinite; }
+.u-spin-slow { animation: u-spin-slow 22s linear infinite; }
+
+/* Respect strict de la préférence système : plus aucune animation décorative. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Barre de défilement discrète, aux couleurs de la marque */
+@supports (scrollbar-color: auto) {
+  html { scrollbar-color: color-mix(in srgb, var(--color-anthracite) 35%, transparent) transparent; }
+}

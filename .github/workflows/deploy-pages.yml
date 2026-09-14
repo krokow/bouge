@@ -1,0 +1,72 @@
+# ---------------------------------------------------------------------------
+# Déploiement du site BOUGE. sur GitHub Pages
+#
+# À FAIRE UNE FOIS, côté dépôt :
+#   Settings ▸ Pages ▸ Build and deployment ▸ Source = « GitHub Actions »
+# Sans cela, le workflow échoue à l'étape de déploiement.
+#
+# Le site est alors servi sur https://<utilisateur>.github.io/<dépôt>/ ,
+# d'où le chemin de base égal au nom du dépôt. Pour un domaine personnalisé
+# (le futur hébergement OVH), mettre BASE_PATH à une chaîne vide.
+# ---------------------------------------------------------------------------
+name: Déployer sur GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+      - claude/clever-babbage-jut119
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Une seule publication à la fois ; les exécutions en cours ne sont pas
+# interrompues, pour ne jamais laisser le site à moitié déployé.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Installer les dépendances
+        run: npm ci
+
+      - name: Vérifier les types
+        run: npm run typecheck
+
+      - name: Construire le site
+        env:
+          NEXT_PUBLIC_BASE_PATH: /${{ github.event.repository.name }}
+        run: npm run build
+
+      # GitHub Pages ne doit pas ignorer le dossier « _next » (nom commençant
+      # par un souligné, écarté par Jekyll).
+      - name: Désactiver Jekyll
+        run: touch out/.nojekyll
+
+      - name: Préparer l'artefact Pages
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: out
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

@@ -1,0 +1,73 @@
+# ---------------------------------------------------------------------------
+# Déploiement du site BOUGE. sur GitLab Pages
+#
+# Le site est un export statique Next.js : GitLab n'a qu'à publier des fichiers,
+# aucun serveur Node n'est nécessaire en production.
+#
+# ⚠️ CHEMIN DE BASE — à vérifier avant le premier déploiement
+# Deux cas de figure, selon la configuration Pages du projet :
+#
+#   1. URL classique   https://<groupe>.gitlab.io/<projet>/
+#      → le site est servi depuis un sous-répertoire :
+#        laisser PAGES_BASE_PATH tel quel ("/$CI_PROJECT_NAME").
+#
+#   2. Domaine unique  https://<projet>-xxxxxx.gitlab.io/
+#      (option « Use unique domain », activée par défaut sur les projets récents)
+#      → le site est servi à la racine :
+#        définir la variable PAGES_BASE_PATH à une chaîne VIDE dans
+#        Settings ▸ CI/CD ▸ Variables.
+#
+#   3. Domaine dédié   https://bouge-studio.fr  (hébergement OVH final)
+#      → également la racine : PAGES_BASE_PATH vide.
+#
+# Un mauvais réglage se voit immédiatement : la page s'affiche sans style et
+# sans images, parce que les fichiers sont cherchés au mauvais endroit.
+# ---------------------------------------------------------------------------
+
+image: node:22-alpine
+
+variables:
+  PAGES_BASE_PATH: "/$CI_PROJECT_NAME"
+
+stages:
+  - quality
+  - deploy
+
+# Le cache npm évite de retélécharger les dépendances à chaque exécution.
+.node_setup: &node_setup
+  cache:
+    key:
+      files:
+        - package-lock.json
+    paths:
+      - .npm/
+  before_script:
+    - npm ci --cache .npm --prefer-offline
+
+# Vérification des types : un échec ici bloque la publication.
+typecheck:
+  <<: *node_setup
+  stage: quality
+  script:
+    - npm run typecheck
+
+pages:
+  <<: *node_setup
+  stage: deploy
+  script:
+    - export NEXT_PUBLIC_BASE_PATH="$PAGES_BASE_PATH"
+    - npm run build
+    # GitLab Pages publie le contenu du dossier « public ».
+    # Ce dossier existe déjà dans le dépôt (il contient les sources statiques :
+    # logos, polices, médias) ; il a été consommé par le build, on peut donc le
+    # remplacer par le résultat de l'export.
+    # Sur GitLab ≥ 17.9, on peut aussi supprimer ces deux lignes et déclarer
+    # « publish: out » à la place.
+    - rm -rf public
+    - mv out public
+  artifacts:
+    paths:
+      - public
+  rules:
+    # Seule la branche par défaut est publiée.
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
