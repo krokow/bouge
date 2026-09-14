@@ -164,9 +164,12 @@ export function Navbar() {
         </nav>
       </header>
 
-      {/* Panneau mobile / tablette */}
+      {/* Panneau mobile / tablette.
+          Empilement : voile (55) puis panneau (60) passent AU-DESSUS de la
+          barre de navigation (50). Sans cela, le bouton de fermeture du
+          panneau se retrouve sous le bouton burger, qui capte le clic. */}
       <div
-        className={`fixed inset-0 z-40 bg-anthracite/70 backdrop-blur-sm transition-opacity duration-400 lg:hidden ${
+        className={`fixed inset-0 z-[55] bg-anthracite/70 backdrop-blur-sm transition-opacity duration-400 lg:hidden ${
           open ? 'opacity-100' : 'pointer-events-none opacity-0'
         }`}
         onClick={() => setOpen(false)}
@@ -175,12 +178,13 @@ export function Navbar() {
       <div
         id="menu-mobile"
         className={[
-          'fixed right-0 top-0 z-45 flex h-[100dvh] w-[min(22rem,88vw)] flex-col overflow-y-auto',
+          'fixed right-0 top-0 flex h-[100dvh] w-[min(22rem,88vw)] flex-col overflow-y-auto',
           'bg-anthracite text-creme transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] lg:hidden',
           open ? 'translate-x-0' : 'translate-x-full',
         ].join(' ')}
-        style={{ zIndex: 45 }}
-        {...(!open && { inert: '' as unknown as boolean })}
+        style={{ zIndex: 60 }}
+        // Panneau fermé : ses liens sortent de l'ordre de tabulation.
+        inert={!open}
       >
         <div className="flex items-center justify-between px-6 pb-6 pt-6">
           <img src={asset('/brand/wordmark-creme.webp')} alt="" width={720} height={183} className="h-7 w-auto" />
