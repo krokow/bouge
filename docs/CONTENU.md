@@ -23,6 +23,7 @@ Voici ce qui doit être relu ou corrigé, par ordre d'importance.
 | Email | bonjour@bouge-studio.fr | `src/lib/config.ts` |
 | Instagram | instagram.com/bouge.studio | `src/lib/config.ts` |
 | Accès et temps de trajet | Formulations volontairement prudentes, non vérifiées sur place | `src/lib/config.ts` |
+| **Coordonnées du marqueur sur la carte** | **Pointent sur le quartier, pas sur le numéro** | `src/lib/config.ts` → `STUDIO.coordinates` |
 | Témoignages clients | Trois avis inventés | `src/components/home/Testimonials.tsx` |
 | Ouverture du cabinet d'ostéopathie | « l'an prochain » | `src/components/home/OsteoTeaser.tsx` |
 
@@ -74,7 +75,24 @@ La page annonce une ouverture « l'an prochain » et décrit un cabinet dédié 
 salle d'attente. À ajuster dès que la date et le praticien sont connus. Le
 formulaire « être prévenu » n'envoie rien pour l'instant.
 
-## 7. Le comptoir : boutique et boissons
+## 7. La carte de la page Contact
+
+La carte est fonctionnelle (déplacement, zoom, itinéraire), mais **le marqueur
+n'est pas encore exactement sur la porte du studio** : l'adresse n'a pas pu être
+géocodée automatiquement, et inventer des coordinnées aurait planté le repère à
+côté.
+
+Pour le placer précisément, en dix secondes :
+
+1. ouvrir [Google Maps](https://www.google.com/maps) et chercher l'adresse ;
+2. clic droit sur la porte du studio ;
+3. cliquer sur les chiffres affichés en haut du menu — ils sont copiés
+   (par exemple `48,8975, 2,2555`) ;
+4. les reporter dans `src/lib/config.ts`, dans `STUDIO.coordinates`, en
+   remplaçant les virgules décimales par des points, et passer `verified` à
+   `true`.
+
+## 8. Le comptoir : boutique et boissons
 
 Point tranché avec le studio : *« dans la salle d'attente il y aura des articles
 à vendre et la possibilité de consommer boissons froides ou chaudes »*.

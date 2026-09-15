@@ -34,6 +34,7 @@ node tools/test-booking.mjs 1440  # tunnel de réservation de bout en bout
 node tools/test-admin.mjs 390     # espace gérant, toutes les sections
 node tools/test-hero-video.mjs    # source, lecture automatique et fondu du hero
 node tools/test-reduced-motion.mjs # le site est identique avec « animations réduites »
+node tools/test-map.mjs           # carte : chargement, marqueur, déplacement, zoom, repli
 ```
 
 Les deux dernières commandes nécessitent Python 3 (`pip install pillow fonttools brotli numpy imageio-ffmpeg`). Elles ne sont à relancer que si la charte graphique évolue.

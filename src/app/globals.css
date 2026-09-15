@@ -320,3 +320,111 @@
 @supports (scrollbar-color: auto) {
   html { scrollbar-color: color-mix(in srgb, var(--color-anthracite) 35%, transparent) transparent; }
 }
+
+/* ===========================================================================
+   Carte Leaflet, habillée aux couleurs de la marque
+   ===========================================================================
+   Deux précautions, apprises à la dure :
+
+   1. CE BLOC EST HORS DE TOUTE COUCHE `@layer`. `leaflet/dist/leaflet.css`
+      est importé tel quel, donc sans couche — et une règle sans couche
+      l'emporte TOUJOURS sur une règle placée dans une couche, quelle que soit
+      sa spécificité. Tant que cet habillage vivait dans `@layer components`,
+      Leaflet reprenait systématiquement le dessus.
+
+   2. CHAQUE SÉLECTEUR PASSE PAR `.u-map.leaflet-container`. Un simple
+      `.u-map .leaflet-bar a` est à égalité de spécificité avec le
+      `.leaflet-touch .leaflet-bar a` de Leaflet ; à égalité, c'est l'ordre des
+      fichiers qui tranche, et la feuille de Leaflet est chargée après la
+      nôtre. Le préfixe supplémentaire règle la question définitivement.
+   =========================================================================== */
+
+.u-map {
+  /* Leaflet empile ses calques jusqu'à z-index 1000. `isolation` enferme
+     cette pile dans son propre contexte : sans cela, les contrôles de la
+     carte peuvent passer par-dessus la barre de navigation fixe. */
+  isolation: isolate;
+  position: relative;
+  z-index: 0;
+}
+
+.u-map.leaflet-container {
+  background: var(--color-creme-dim);
+  font-family: var(--font-sans);
+  font-size: 0.8rem;
+}
+
+/* Boutons de zoom */
+.u-map.leaflet-container .leaflet-bar {
+  border: 1.5px solid color-mix(in srgb, var(--color-anthracite) 15%, transparent);
+  border-radius: 0.75rem;
+  overflow: hidden;
+  box-shadow: 0 8px 20px -12px rgb(35 35 35 / 0.45);
+}
+.u-map.leaflet-container .leaflet-bar a {
+  background-color: var(--color-creme);
+  border-bottom-color: color-mix(in srgb, var(--color-anthracite) 12%, transparent);
+  color: var(--color-anthracite);
+  width: 2.25rem;
+  height: 2.25rem;
+  line-height: 2.25rem;
+  font-weight: 700;
+}
+.u-map.leaflet-container .leaflet-bar a:hover,
+.u-map.leaflet-container .leaflet-bar a:focus-visible {
+  background-color: var(--color-orange);
+  color: var(--color-creme);
+}
+
+/* Mention obligatoire des données OpenStreetMap */
+.u-map.leaflet-container .leaflet-control-attribution {
+  background: color-mix(in srgb, var(--color-creme) 88%, transparent);
+  color: color-mix(in srgb, var(--color-anthracite) 65%, transparent);
+  font-size: 0.62rem;
+  padding: 0.1rem 0.45rem;
+}
+.u-map.leaflet-container .leaflet-control-attribution a {
+  color: var(--color-orange-dark);
+}
+
+/* Bulle d'information du marqueur */
+.u-map.leaflet-container .leaflet-popup-content-wrapper {
+  background: var(--color-anthracite);
+  color: var(--color-creme);
+  border-radius: 1rem;
+}
+.u-map.leaflet-container .leaflet-popup-content {
+  margin: 0.85rem 1.1rem;
+  line-height: 1.45;
+}
+.u-map.leaflet-container .leaflet-popup-tip {
+  background: var(--color-anthracite);
+}
+.u-map.leaflet-container .leaflet-popup-close-button {
+  color: color-mix(in srgb, var(--color-creme) 60%, transparent);
+}
+
+/* Marqueur : le monogramme de la marque, avec un halo pulsé.
+   La largeur de l'image est en plus posée en style en ligne dans
+   StudioMap.tsx : Leaflet impose un `width: auto` sur les images de son calque
+   de marqueurs, et le style en ligne est le seul moyen d'en être certain. */
+.u-map.leaflet-container .u-map-pin {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+}
+.u-map.leaflet-container .u-map-pin img {
+  position: relative;
+  width: 30px;
+  height: auto;
+  filter: drop-shadow(0 3px 6px rgb(35 35 35 / 0.45));
+}
+.u-map.leaflet-container .u-map-pin__ring {
+  position: absolute;
+  inset: 4px;
+  border-radius: 9999px;
+  background: color-mix(in srgb, var(--color-orange) 45%, transparent);
+  animation: u-pulse-ring 2.6s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+}

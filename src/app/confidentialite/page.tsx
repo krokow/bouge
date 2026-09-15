@@ -139,6 +139,28 @@ export default function ConfidentialitePage() {
         régie publicitaire&nbsp;: les typographies sont servies depuis notre propre domaine.
       </p>
 
+      <h3>La carte de la page Contact</h3>
+      <p>
+        La carte affichée sur la page Contact utilise les fonds cartographiques d’
+        <a href="https://www.openstreetmap.org" target="_blank" rel="noopener noreferrer">
+          OpenStreetMap
+        </a>
+        , un projet cartographique libre. Google Maps a été écarté volontairement&nbsp;: ce service dépose des
+        cookies et transmet des données à des fins publicitaires, ce qui aurait imposé de bloquer la carte tant
+        que vous n’y auriez pas consenti.
+      </p>
+      <p>
+        OpenStreetMap ne dépose <strong>aucun cookie</strong> et n’effectue aucun suivi publicitaire. L’affichage
+        des fonds de carte suppose en revanche, comme pour toute image chargée depuis un autre domaine, que votre
+        adresse IP soit transmise à ses serveurs&nbsp;; elle n’est utilisée que pour vous livrer les images
+        demandées. Les fonds de carte ne sont d’ailleurs chargés qu’au moment où la carte approche de votre écran,
+        et jamais si vous ne descendez pas jusqu’à elle. Voir la{' '}
+        <a href="https://wiki.osmfoundation.org/wiki/Privacy_Policy" target="_blank" rel="noopener noreferrer">
+          politique de confidentialité de la fondation OpenStreetMap
+        </a>
+        .
+      </p>
+
       <h2>6. Emails automatiques</h2>
       <p>
         Trois emails sont envoyés dans le cadre de l’exécution du contrat, sans possibilité de désinscription

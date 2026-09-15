@@ -1,9 +1,10 @@
 import type { Metadata } from 'next';
 import { ContactForm } from '@/components/ui/ContactForm';
+import { StudioMap } from '@/components/ui/StudioMap';
 import { ArrowRight, ButtonLink } from '@/components/ui/Button';
 import { PageHero } from '@/components/ui/PageHero';
 import { Reveal } from '@/components/ui/Reveal';
-import { asset, OPENING_HOURS, STUDIO } from '@/lib/config';
+import { OPENING_HOURS, STUDIO } from '@/lib/config';
 import { BOOKING_HREF } from '@/lib/nav';
 
 export const metadata: Metadata = {
@@ -114,23 +115,7 @@ export default function ContactPage() {
                 </div>
               </div>
 
-              {/* Emplacement de la carte : remplacer par une carte OpenStreetMap
-                  ou Google Maps une fois l'adresse définitive confirmée. */}
-              <div className="relative overflow-hidden rounded-[1.5rem]">
-                <img
-                  src={asset('/media/studio-accueil.webp')}
-                  alt=""
-                  width={1600}
-                  height={1100}
-                  loading="lazy"
-                  className="aspect-[16/9] w-full object-cover"
-                />
-                <div className="absolute inset-0 grid place-items-center bg-anthracite/55 p-5 text-center">
-                  <p className="font-hand text-[length:var(--text-2xl)] text-creme">
-                    La carte s’affichera ici une fois l’adresse définitive confirmée.
-                  </p>
-                </div>
-              </div>
+              <StudioMap />
 
               <ButtonLink href={BOOKING_HREF} size="md" block>
                 Réserver en ligne <ArrowRight />

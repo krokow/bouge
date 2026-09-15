@@ -27,6 +27,23 @@ export const STUDIO = {
     city: 'Courbevoie',
     country: 'France',
   },
+  /**
+   * Position du marqueur sur la carte de la page Contact.
+   *
+   * ⚠️ À VÉRIFIER — ces coordonnées n'ont pas pu être géocodées automatiquement
+   * et pointent sur le quartier, pas encore sur le numéro exact.
+   *
+   * Pour les corriger en dix secondes : ouvrir Google Maps, clic droit sur la
+   * porte du studio, cliquer sur les chiffres qui s'affichent en haut du menu
+   * (ils sont copiés), puis les coller ci-dessous dans l'ordre lat / lon.
+   */
+  coordinates: {
+    lat: 48.8975,
+    lon: 2.2555,
+    /** Niveau de zoom initial : 17 ≈ l'échelle d'une rue. */
+    zoom: 17,
+    verified: false,
+  },
   phone: '06 74 90 08 02',
   phoneHref: '+33674900802',
   email: 'bonjour@bouge-studio.fr',
