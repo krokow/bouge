@@ -9,8 +9,8 @@ import { type ElementType, type ReactNode, useEffect, useRef, useState } from 'r
  * le navigateur compose la transition sur le GPU, ce qui reste fluide même sur
  * un mobile d'entrée de gamme avec la vidéo du hero en lecture.
  *
- * `prefers-reduced-motion` est géré globalement dans globals.css : la transition
- * est alors réduite à néant et le contenu s'affiche immédiatement.
+ * La révélation s'applique à tous les visiteurs, sans exception liée aux
+ * préférences système : voir la note en fin de globals.css.
  */
 export function Reveal({
   children,

@@ -21,10 +21,10 @@ export function Hero() {
   // Parallaxe douce du contenu au défilement.
   // Écrit dans une variable CSS via requestAnimationFrame : aucune remise en
   // page, la composition reste sur le GPU et le scroll ne saccade pas.
+  // Appliquée à tout le monde, sans condition sur « animations réduites ».
   useEffect(() => {
     const node = contentRef.current;
     if (!node) return;
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
     let frame = 0;
     const update = () => {

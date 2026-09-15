@@ -15,7 +15,7 @@ import type { Offer } from '@/lib/types';
  * Deux modes, choisis automatiquement — jamais deux contenus différents, les
  * mêmes textes dans les deux cas.
  *
- * 1. « Défilement » (à partir de 1024px, si les animations sont autorisées).
+ * 1. « Défilement » (à partir de 1024×760 px).
  *    La section est haute de plusieurs écrans et son contenu reste épinglé :
  *    en descendant, on traverse les quatre formules l'une après l'autre, et en
  *    remontant on les retraverse dans l'autre sens. C'est le défilement natif
@@ -24,7 +24,7 @@ import type { Offer } from '@/lib/types';
  *    arrière fonctionnent normalement. On ne peut donc pas « passer à côté »
  *    d'une formule sans l'avoir vue, et on n'est jamais bloqué dans la section.
  *
- * 2. « Empilé » (mobile, tablette, ou préférence « animations réduites »).
+ * 2. « Empilé » (mobile et tablette, sous 1024×760 px).
  *    Les quatre formules sont simplement les unes sous les autres. Sur un
  *    téléphone, épingler une section coûte cher en défilement et se comporte
  *    mal avec les barres d'adresse rétractables : l'empilement est à la fois
@@ -53,19 +53,16 @@ export function OfferShowcase() {
 
   /* --- Choix du mode ---------------------------------------------------- */
   useEffect(() => {
+    // Seule la taille de l'écran décide du mode. La préférence « animations
+    // réduites » n'entre pas en compte : le studio veut un fonctionnement
+    // identique pour tout le monde.
     // La hauteur compte autant que la largeur : sur un écran court, le
     // panneau ne tiendrait pas dans la zone épinglée et serait rogné.
-    // En dessous de 760px de haut, on repasse donc à l'empilement.
     const wide = window.matchMedia('(min-width: 1024px) and (min-height: 760px)');
-    const calm = window.matchMedia('(prefers-reduced-motion: reduce)');
-    const apply = () => setMode(wide.matches && !calm.matches ? 'scroll' : 'stack');
+    const apply = () => setMode(wide.matches ? 'scroll' : 'stack');
     apply();
     wide.addEventListener('change', apply);
-    calm.addEventListener('change', apply);
-    return () => {
-      wide.removeEventListener('change', apply);
-      calm.removeEventListener('change', apply);
-    };
+    return () => wide.removeEventListener('change', apply);
   }, []);
 
   /* --- Le défilement pilote la formule affichée ------------------------- */

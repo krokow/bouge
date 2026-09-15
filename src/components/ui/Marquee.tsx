@@ -4,8 +4,8 @@ import { asset } from '@/lib/config';
  * Bandeau défilant.
  *
  * Le contenu est dupliqué une fois et la piste translate de -50 % : la boucle
- * est invisible. L'animation porte sur `transform` uniquement (composition GPU),
- * et `prefers-reduced-motion` la neutralise depuis globals.css.
+ * est invisible. L'animation porte sur `transform` uniquement, donc composée
+ * par le GPU : elle ne coûte pas de remise en page et tourne sans saccade.
  */
 export function Marquee({
   items,

@@ -26,6 +26,16 @@ npm run dev          # http://localhost:3000
 | `npm run assets` | Régénère `public/brand/` et `public/fonts/` depuis la charte |
 | `npm run media` | Régénère les visuels provisoires du local (ne touche jamais à la vidéo) |
 
+Vérifications visuelles et fonctionnelles (le site doit être construit avant) :
+
+```bash
+node tools/check-pages.mjs        # 12 pages × 5 largeurs : débordements, erreurs JS
+node tools/test-booking.mjs 1440  # tunnel de réservation de bout en bout
+node tools/test-admin.mjs 390     # espace gérant, toutes les sections
+node tools/test-hero-video.mjs    # source, lecture automatique et fondu du hero
+node tools/test-reduced-motion.mjs # le site est identique avec « animations réduites »
+```
+
 Les deux dernières commandes nécessitent Python 3 (`pip install pillow fonttools brotli numpy imageio-ffmpeg`). Elles ne sont à relancer que si la charte graphique évolue.
 
 ## Comptes de démonstration
@@ -136,9 +146,9 @@ Le site est fluide, sans paliers brusques :
   375 px et 1920 px ;
 - **grilles en `auto-fill`** — le nombre de colonnes suit la place disponible ;
 - **section épinglée des offres** — active à partir de 1024×760 px ; en dessous,
-  ou si les animations sont réduites, les quatre formules sont simplement
-  empilées. Le défilement natif n'est jamais intercepté : inertie, clavier,
-  barre de défilement et retour arrière fonctionnent normalement ;
+  les quatre formules sont simplement empilées. Le défilement natif n'est jamais
+  intercepté : inertie, clavier, barre de défilement et retour arrière
+  fonctionnent normalement ;
 - **fond vidéo** — version allégée sur téléphone (1,7 Mo contre 5,9),
   `object-fit: cover` pour ne jamais déformer, voile de lisibilité garantissant
   le contraste du logo et du bouton d'appel à l'action ;
@@ -149,7 +159,11 @@ Le site est fluide, sans paliers brusques :
 - **espace gérant** — tableaux transformés en cartes, calendrier hebdomadaire
   transformé en liste journalière : le gérant peut bloquer un créneau depuis son
   téléphone ;
-- `prefers-reduced-motion` désactive toutes les animations décoratives.
+Le site se comporte **strictement de la même façon pour tous les visiteurs** :
+la préférence système « animations réduites » ne modifie ni la mise en page, ni
+les animations, ni le fonctionnement du défilement. C'est un choix explicite du
+studio, vérifié par `tools/test-reduced-motion.mjs`. La marche à suivre pour
+revenir dessus est notée en fin de `src/app/globals.css`.
 
 Testé à 375, 390, 430, 768, 1024, 1280, 1440 et 1920 px.
 

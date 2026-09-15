@@ -292,15 +292,29 @@
 .u-float { animation: u-float 6s ease-in-out infinite; }
 .u-spin-slow { animation: u-spin-slow 22s linear infinite; }
 
-/* Respect strict de la préférence système : plus aucune animation décorative. */
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
-  }
-}
+/* ---------------------------------------------------------------------------
+   Préférence système « animations réduites »
+   ---------------------------------------------------------------------------
+   Aucune règle ici, volontairement : le studio veut un site strictement
+   identique pour tous les visiteurs, animations comprises. Le bandeau
+   défilant, la parallaxe du hero, les révélations au défilement et la section
+   épinglée des formules fonctionnent donc de la même façon, que la préférence
+   soit activée ou non.
+
+   À savoir si l'on revient un jour sur ce choix : cette préférence est celle
+   que règlent les personnes sujettes au mal des transports ou aux troubles
+   vestibulaires, chez qui un mouvement de fond peut déclencher nausées et
+   vertiges. La rétablir tient en un bloc :
+
+     @media (prefers-reduced-motion: reduce) {
+       *, *::before, *::after {
+         animation-duration: 0.01ms !important;
+         animation-iteration-count: 1 !important;
+         transition-duration: 0.01ms !important;
+         scroll-behavior: auto !important;
+       }
+     }
+--------------------------------------------------------------------------- */
 
 /* Barre de défilement discrète, aux couleurs de la marque */
 @supports (scrollbar-color: auto) {
