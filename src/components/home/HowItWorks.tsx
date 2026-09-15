@@ -7,7 +7,7 @@ import { BOOKING_HREF } from '@/lib/nav';
 const STEPS = [
   {
     title: 'Vous choisissez',
-    body: 'Le nombre de participants, la formule, la date, l’horaire. Quatre écrans, pas un de plus.',
+    body: 'Le nombre de participants, la formule, puis la date et l’horaire sur le même écran. Trois écrans, pas un de plus.',
   },
   {
     title: 'Vous confirmez',

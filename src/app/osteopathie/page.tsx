@@ -21,10 +21,11 @@ const STEPS = [
       'dans l’espace de coaching : c’est un cabinet à part entière, avec la confidentialité que ça suppose.',
   },
   {
-    title: 'Une salle d’attente à soi',
+    title: 'Une salle d’attente qui vit',
     text:
-      'Un espace calme, séparé de la zone d’entraînement. On n’attend pas son rendez-vous assis au milieu ' +
-      'd’une séance en cours, et on ne repart pas dans le bruit.',
+      'Un espace calme, séparé de la zone d’entraînement : on n’attend pas son rendez-vous assis au milieu ' +
+      'd’une séance en cours. C’est la même salle que celle du studio, avec son comptoir — boissons chaudes ' +
+      'et fraîches, et le vestiaire BOUGE. sur les étagères. On peut y arriver en avance sans que ce soit une punition.',
   },
   {
     title: 'Un dialogue avec votre coach',

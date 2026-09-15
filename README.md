@@ -24,7 +24,7 @@ npm run dev          # http://localhost:3000
 | `npm run build` | Export statique dans `out/` |
 | `npm run typecheck` | Vérification TypeScript |
 | `npm run assets` | Régénère `public/brand/` et `public/fonts/` depuis la charte |
-| `npm run media` | Régénère les médias provisoires (vidéo de fond, visuels du local) |
+| `npm run media` | Régénère les visuels provisoires du local (ne touche jamais à la vidéo) |
 
 Les deux dernières commandes nécessitent Python 3 (`pip install pillow fonttools brotli numpy imageio-ffmpeg`). Elles ne sont à relancer que si la charte graphique évolue.
 
@@ -43,14 +43,16 @@ Tous les comptes clients de démonstration utilisent `demo1234`. Le bouton
 ## Ce que contient le site
 
 **Pages publiques** — accueil (fond vidéo, animations au défilement), nos
-offres, le studio, ostéopathie (« bientôt disponible »), à propos, contact,
-mentions légales, CGV, politique de confidentialité, page 404. Bandeau cookies
-conforme RGPD sur l'ensemble du site.
+offres (sélecteur éditorial en grand format), le studio (espaces, comptoir
+boissons et boutique, règles du lieu), ostéopathie (« bientôt disponible »),
+à propos, contact, mentions légales, CGV, politique de confidentialité, page
+404. Bandeau cookies conforme RGPD sur l'ensemble du site.
 
-**Tunnel de réservation** (`/reserver/`) — sept étapes : participants (1 à 3),
-formule, date, créneau, création de compte ou connexion, paiement (sur place ou
-carte bancaire simulée), confirmation avec export `.ics`. Emails de
-confirmation et de rappel simulés.
+**Tunnel de réservation** (`/reserver/`) — six étapes : participants (1 à 3),
+formule, date et créneau sur un même écran (cliquer un jour affiche aussitôt
+ses horaires), création de compte ou connexion, paiement (sur place ou carte
+bancaire simulée), confirmation avec export `.ics`. Emails de confirmation et
+de rappel simulés.
 
 **Espace client** (`/compte/`) — séances à venir, report et annulation en
 autonomie jusqu'à 24 h avant, historique, profil, export des données et
@@ -132,9 +134,9 @@ Le site est fluide, sans paliers brusques :
 - **typographie et espacements en `clamp()`** — interpolation continue entre
   375 px et 1920 px ;
 - **grilles en `auto-fill`** — le nombre de colonnes suit la place disponible ;
-- **fond vidéo** — version portrait allégée sur téléphone, `object-fit: cover`
-  pour ne jamais déformer, voile de lisibilité garantissant le contraste du
-  logo et du bouton d'appel à l'action ;
+- **fond vidéo** — version allégée sur téléphone (1,7 Mo contre 5,9),
+  `object-fit: cover` pour ne jamais déformer, voile de lisibilité garantissant
+  le contraste du logo et du bouton d'appel à l'action ;
 - **navigation** — panneau latéral sous 1024 px, avec « Prendre rendez-vous »
   toujours visible dans la barre ;
 - **tunnel de réservation** — cibles tactiles d'au moins 44 px, récapitulatif
@@ -176,16 +178,17 @@ Détails et fichier `.htaccess` dans [`docs/MIGRATION.md`](docs/MIGRATION.md).
 
 ## Limites assumées de cette démonstration
 
-- **Vidéo de fond et visuels du local provisoires** — le local est en travaux.
-  Ils sont composés aux couleurs de la charte et se remplacent en déposant un
-  fichier, sans toucher au code. Voir [`docs/MEDIA.md`](docs/MEDIA.md).
+- **Visuels du local provisoires** — le local est en travaux. Ils sont composés
+  aux couleurs de la charte et se remplacent en déposant un fichier, sans
+  toucher au code. La vidéo de fond, elle, est la vraie vidéo du studio.
+  Voir [`docs/MEDIA.md`](docs/MEDIA.md).
 - **Aucun paiement réel** — l'écran de carte bancaire est une maquette, à
   remplacer par Stripe.
 - **Aucune donnée envoyée** — tout vit dans le navigateur.
 - **Sécurité non implémentée** — le contrôle d'accès à l'espace gérant est
   visuel. Il devra être fait côté serveur. Voir la section 4 de
   [`docs/MIGRATION.md`](docs/MIGRATION.md).
-- **Contenu à valider** — coordonnées, tarifs, témoignages. Voir
+- **Contenu à valider** — tarifs, témoignages, temps de trajet. Voir
   [`docs/CONTENU.md`](docs/CONTENU.md).
 
 ---

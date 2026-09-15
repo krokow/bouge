@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { OFFERS } from '@/data/offers';
 import { ArrowRight, ButtonLink } from '@/components/ui/Button';
 import { Marquee } from '@/components/ui/Marquee';
-import { OfferCard } from '@/components/ui/OfferCard';
+import { OfferShowcase } from '@/components/offers/OfferShowcase';
 import { PageHero } from '@/components/ui/PageHero';
 import { Price } from '@/components/ui/Price';
 import { Reveal } from '@/components/ui/Reveal';
@@ -71,24 +71,17 @@ export default function OffresPage() {
         }
         mascotte="mascotte-lift-light.webp"
       >
-        <div className="flex flex-wrap gap-3 pt-3">
+        <div className="flex flex-wrap items-center gap-3 pt-3">
           <ButtonLink href={BOOKING_HREF} size="md">
             Réserver maintenant <ArrowRight />
           </ButtonLink>
+          <span className="text-[length:var(--text-sm)] text-creme/60">
+            À partir de {Math.min(...OFFERS.map((o) => o.pricePerPersonCents)) / 100} € la séance, sans engagement.
+          </span>
         </div>
       </PageHero>
 
-      <section className="u-section bg-creme">
-        <div className="u-container">
-          <ul className="grid gap-5 md:grid-cols-2 xl:gap-6">
-            {OFFERS.map((offer, i) => (
-              <Reveal as="li" key={offer.id} delay={i * 90} className="h-full">
-                <OfferCard offer={offer} detailed />
-              </Reveal>
-            ))}
-          </ul>
-        </div>
-      </section>
+      <OfferShowcase />
 
       <Marquee items={['Bougez.', 'Rencontrez.', 'Recommencez.', STUDIO.claim]} tone="anthracite" />
 
@@ -96,9 +89,9 @@ export default function OffresPage() {
       <section className="u-section bg-creme">
         <div className="u-container">
           <SectionHeading
-            eyebrow="En un coup d’œil"
-            title="Laquelle choisir ?"
-            intro="Si vous hésitez, commencez par la séance découverte. Elle n’engage à rien et elle répond à la question mieux que n’importe quel tableau."
+            eyebrow="Le tableau, pour les pressés"
+            title="Tout, sur une seule ligne."
+            intro="Si vous hésitez encore, commencez par la séance découverte. Elle n’engage à rien et elle répond à la question mieux que n’importe quel tableau."
           />
 
           <Reveal className="mt-[var(--spacing-fluid-4)]">

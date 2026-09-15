@@ -138,6 +138,7 @@ def build_poster(frame):
 PLACEHOLDERS = [
     # nom de fichier,             teinte 1,  teinte 2,  filigrane
     ("studio-espace-coaching",    ORANGE,    BROWN,     "mascotte-lift-light.webp"),
+    ("studio-boutique",           BROWN,     CREME,     "mascotte-walk-dark.webp"),
     ("studio-vestiaire",          JADE,      ANTHRACITE,"monogram-jade.webp"),
     ("studio-douches",            SKY,       BROWN,     "monogram-anthracite.webp"),
     ("studio-accueil",            CREME,     ORANGE,    "mascotte-walk-dark.webp"),
@@ -204,10 +205,37 @@ def build_placeholder(name, c1, c2, watermark, w=1600, h=1100):
 
 
 if __name__ == "__main__":
-    print("Vidéo de fond (provisoire) :")
-    first = render_video("hero.mp4", 1920, 1080, "1400k", 28)
-    render_video("hero-mobile.mp4", 720, 1280, "700k", 30)
-    build_poster(first)
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Génère les médias provisoires du site.")
+    parser.add_argument(
+        "--video",
+        action="store_true",
+        help="régénère aussi la vidéo de fond abstraite (refusé si une vraie vidéo est déjà en place)",
+    )
+    parser.add_argument(
+        "--force",
+        action="store_true",
+        help="écrase la vidéo existante — à n'utiliser qu'en connaissance de cause",
+    )
+    args = parser.parse_args()
+
+    # ⚠️ GARDE-FOU : le studio a déposé sa vraie vidéo dans public/media/hero.mp4.
+    # Sans ce contrôle, relancer ce script par réflexe l'écraserait par la vidéo
+    # abstraite de démonstration, sans prévenir.
+    if args.video:
+        existing = OUT / "hero.mp4"
+        if existing.exists() and not args.force:
+            print(
+                f"REFUS : {existing} existe déjà.\n"
+                "        S'il s'agit de la vraie vidéo du studio, ne la régénérez pas.\n"
+                "        Pour passer outre volontairement : --video --force"
+            )
+        else:
+            print("Vidéo de fond (provisoire) :")
+            first = render_video("hero.mp4", 1920, 1080, "1400k", 28)
+            render_video("hero-mobile.mp4", 720, 1280, "700k", 30)
+            build_poster(first)
 
     print("Visuels provisoires du local :")
     for name, c1, c2, wm in PLACEHOLDERS:

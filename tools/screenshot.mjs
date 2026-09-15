@@ -36,7 +36,8 @@ const HEIGHTS = { 375: 812, 390: 844, 430: 932, 768: 1024, 1024: 768, 1280: 800,
 const heightFor = (w) => HEIGHTS[w] ?? Math.round(w * 0.62);
 
 await mkdir(OUT_DIR, { recursive: true });
-await new Promise((r) => server.listen(4321, r));
+const PORT = Number(process.env.SHOT_PORT ?? 4321);
+await new Promise((r) => server.listen(PORT, r));
 
 const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox'] });
 const name = page.replace(/\W+/g, '_') || 'home';
@@ -48,7 +49,7 @@ for (const width of widths) {
   p.on('console', (m) => m.type() === 'error' && errors.push(`[${width}] ${m.text()}`));
   p.on('pageerror', (e) => errors.push(`[${width}] ${e.message}`));
   p.on('response', (r) => r.status() >= 400 && errors.push(`[${width}] ${r.status()} ${r.url()}`));
-  await p.goto(`http://localhost:4321${page}`, { waitUntil: 'networkidle' });
+  await p.goto(`http://localhost:${PORT}${page}`, { waitUntil: 'networkidle' });
   await p.waitForTimeout(1200);
   // Déroule la page pour déclencher toutes les révélations au défilement.
   await p.evaluate(async () => {

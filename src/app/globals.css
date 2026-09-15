@@ -137,6 +137,34 @@
     /* iOS zoome sur les champs sous 16px : on ne descend jamais en dessous. */
     font-size: max(16px, var(--text-base));
   }
+
+  /* Safari iOS donne aux champs date et heure une largeur intrinsèque qui
+     ignore `width: 100%` : le champ déborde alors de son conteneur. Neutraliser
+     l'apparence native et forcer la largeur règle le problème, sur iOS comme
+     sur Android. */
+  input[type="date"],
+  input[type="time"],
+  input[type="datetime-local"] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  input[type="date"]::-webkit-date-and-time-value,
+  input[type="time"]::-webkit-date-and-time-value {
+    text-align: left;
+    min-width: 0;
+  }
+
+  /* L'icône de calendrier est repoussée à droite du champ. */
+  input[type="date"]::-webkit-calendar-picker-indicator,
+  input[type="time"]::-webkit-calendar-picker-indicator {
+    margin-inline-start: auto;
+    cursor: pointer;
+    opacity: 0.55;
+  }
 }
 
 /* ==========================================================================
@@ -196,6 +224,24 @@
     opacity: 0.32;
     mix-blend-mode: overlay;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
+  }
+
+  /* Texte en contour, pour les titres non sélectionnés du sommaire des
+     formules. Encapsulé dans @supports : sans le tracé, `color: transparent`
+     rendrait le texte purement invisible. */
+  .u-outline-text {
+    color: currentColor;
+  }
+
+  @supports (-webkit-text-stroke: 1px currentColor) {
+    .u-outline-text {
+      color: transparent;
+      -webkit-text-stroke: 1.5px currentColor;
+    }
+    .group:hover .u-outline-text {
+      color: currentColor;
+      -webkit-text-stroke: 0;
+    }
   }
 
   /* Masque de lisibilité sous la vidéo du hero */

@@ -6,62 +6,42 @@ import { asset } from '@/lib/config';
 /**
  * Fond vidéo du hero.
  *
- * Stratégie de performance et d'adaptation, dans cet ordre :
+ * La vidéo est chargée et jouée dans tous les cas, sans condition : c'est une
+ * demande explicite du studio, la vidéo fait partie de l'identité du premier
+ * écran. Les seuls replis restants sont ceux que le navigateur impose :
+ * si la lecture automatique est refusée ou si le fichier ne charge pas,
+ * l'affiche reste visible.
  *
- * 1. L'affiche (`hero-poster.webp`, 37 Ko) est peinte immédiatement. C'est elle
- *    qui sert de LCP : le premier écran est complet avant même que la vidéo
- *    ne commence à se télécharger.
- * 2. La vidéo n'est demandée qu'après le montage, et uniquement si le contexte
- *    s'y prête — on ne la charge pas si l'utilisateur a réduit les animations,
- *    activé le mode économie de données, ou s'il est en 2G.
- * 3. Deux fichiers selon l'orientation : une version portrait légère (276 Ko)
- *    pour les mobiles, la version paysage (641 Ko) ailleurs. `object-fit: cover`
- *    recadre sans jamais déformer l'image.
- * 4. La vidéo n'apparaît qu'une fois réellement lisible, en fondu sur l'affiche :
- *    aucun saut visuel, aucun écran noir.
+ * Deux définitions servies selon la largeur d'écran (même cadrage, 1,7 Mo sur
+ * téléphone contre 5,9 Mo ailleurs) et `object-fit: cover` pour recadrer sans
+ * jamais déformer l'image.
  *
- * REMPLACEMENT : déposer la vraie vidéo du studio sous
- * `public/media/hero.mp4` (+ `hero-mobile.mp4`, + `hero-poster.webp`).
- * Aucun code à modifier — voir docs/MEDIA.md.
+ * REMPLACEMENT : déposer la vidéo sous `public/media/hero.mp4`, puis
+ * régénérer la version mobile et l'affiche — voir docs/MEDIA.md.
  */
 export function HeroVideo() {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const [wanted, setWanted] = useState(false);
+  const [source, setSource] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
 
+  // Le choix de la source se fait en JavaScript, et non par l'attribut `media`
+  // d'une balise <source> : cet attribut n'est pas appliqué de façon fiable
+  // dans une balise <video> (contrairement à <picture>), et le navigateur peut
+  // retenir le mauvais fichier. La source est fixée une fois au montage : la
+  // changer en cours de route relancerait la lecture depuis le début.
   useEffect(() => {
-    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-    // API Network Information : absente de Safari/Firefox, d'où le typage souple.
-    const connection = (navigator as Navigator & {
-      connection?: { saveData?: boolean; effectiveType?: string };
-    }).connection;
-    const frugal =
-      connection?.saveData === true ||
-      connection?.effectiveType === '2g' ||
-      connection?.effectiveType === 'slow-2g';
-
-    if (reducedMotion || frugal) return;
-
-    // Laisse le premier rendu se terminer avant d'engager la bande passante.
-    // `requestIdleCallback` est absent de Safari < 17, d'où le repli sur un timer.
-    const ric = window.requestIdleCallback;
-    if (typeof ric === 'function') {
-      const handle = ric(() => setWanted(true), { timeout: 1200 });
-      return () => window.cancelIdleCallback?.(handle);
-    }
-    const timer = window.setTimeout(() => setWanted(true), 400);
-    return () => window.clearTimeout(timer);
+    const small = window.matchMedia('(max-width: 700px)').matches;
+    setSource(asset(small ? '/media/hero-mobile.mp4' : '/media/hero.mp4'));
   }, []);
 
   useEffect(() => {
-    if (!wanted) return;
     const video = videoRef.current;
-    if (!video) return;
-    // Certains navigateurs refusent la lecture automatique : l'affiche reste
-    // alors visible, ce qui est un repli parfaitement acceptable.
+    if (!video || !source) return;
+    // Certains navigateurs refusent la lecture automatique même en muet
+    // (économiseur de batterie iOS, réglage utilisateur) : l'affiche reste
+    // alors affichée, ce qui est le seul repli acceptable.
     video.play().catch(() => undefined);
-  }, [wanted]);
+  }, [source]);
 
   return (
     <div className="absolute inset-0 overflow-hidden bg-anthracite">
@@ -74,26 +54,23 @@ export function HeroVideo() {
         className="absolute inset-0 size-full object-cover"
       />
 
-      {wanted && (
+      {source && (
         <video
           ref={videoRef}
+          src={source}
           autoPlay
           muted
           loop
           playsInline
-          preload="none"
+          preload="auto"
           poster={asset('/media/hero-poster.webp')}
           aria-hidden="true"
           tabIndex={-1}
           onCanPlay={() => setReady(true)}
-          className={`absolute inset-0 size-full object-cover transition-opacity duration-1000 ${
+          className={`absolute inset-0 size-full object-cover transition-opacity duration-700 ${
             ready ? 'opacity-100' : 'opacity-0'
           }`}
-        >
-          {/* Version portrait allégée pour les écrans plus hauts que larges. */}
-          <source src={asset('/media/hero-mobile.mp4')} type="video/mp4" media="(max-aspect-ratio: 1/1)" />
-          <source src={asset('/media/hero.mp4')} type="video/mp4" />
-        </video>
+        />
       )}
 
       {/* Voile de lisibilité : garantit le contraste du logo et du CTA

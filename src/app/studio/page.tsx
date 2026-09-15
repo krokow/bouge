@@ -36,11 +36,43 @@ const SPACES = [
       'C’est ce qui permet de venir à 7h et d’être au bureau à 8h30.',
   },
   {
-    name: 'L’accueil',
+    name: 'L’accueil et la salle d’attente',
     image: 'studio-accueil.webp',
     text:
-      'Un sas pour souffler avant et après. De l’eau, du café, de quoi s’asseoir cinq minutes ' +
-      'sans être poussé dehors par le créneau suivant.',
+      'Un vrai sas pour souffler avant et après, pas un couloir. De quoi s’asseoir cinq minutes sans être ' +
+      'poussé dehors par le créneau suivant. C’est aussi la salle d’attente du futur cabinet d’ostéopathie, ' +
+      'et c’est là que se tient le comptoir.',
+  },
+  {
+    name: 'Le comptoir',
+    image: 'studio-boutique.webp',
+    text:
+      'Un café avant la séance de 7h, une boisson fraîche après celle de 19h. Et, sur les étagères, ' +
+      'de quoi s’équiper sans repasser par une boutique de sport.',
+  },
+];
+
+/** Ce que l'on trouve au comptoir — confirmé par le studio. */
+const COUNTER = [
+  {
+    title: 'Boissons chaudes',
+    detail: 'Café, thé, infusions. Le café d’après-séance fait partie du rituel, autant qu’il soit bon.',
+    color: 'bg-brun',
+  },
+  {
+    title: 'Boissons fraîches',
+    detail: 'Eau, boissons fraîches, de quoi se réhydrater correctement en sortant.',
+    color: 'bg-ciel',
+  },
+  {
+    title: 'Le vestiaire BOUGE.',
+    detail: 'Shorts, t-shirts, casquettes aux couleurs du studio. À porter à l’entraînement comme en dehors.',
+    color: 'bg-orange',
+  },
+  {
+    title: 'Produits de natation',
+    detail: 'Bonnets, lunettes, accessoires : Melvin vient de la natation et continue d’en vendre.',
+    color: 'bg-jade',
   },
 ];
 
@@ -59,8 +91,9 @@ export default function StudioPage() {
         title={<>Une pièce, un coach, personne d’autre.</>}
         intro={
           <>
-            Le studio se trouve {STUDIO.address.street}, à {STUDIO.address.city}, à quelques minutes à pied de la
-            gare. Ce n’est pas une salle de sport&nbsp;: c’est un espace privatisé pendant votre créneau.
+            Le studio se trouve {STUDIO.address.street}, à {STUDIO.address.city}. Ce n’est pas une salle de
+            sport&nbsp;: c’est un espace privatisé pendant votre créneau, avec une salle d’attente où l’on peut
+            boire un café et s’équiper avant de repartir.
           </>
         }
         mascotte="mascotte-walk-light.webp"
@@ -97,6 +130,59 @@ export default function StudioPage() {
               </article>
             </Reveal>
           ))}
+        </div>
+      </section>
+
+      {/* Le comptoir : boutique et boissons dans la salle d'attente */}
+      <section className="u-section relative overflow-hidden bg-brun text-creme">
+        <img
+          src={asset('/brand/pancarte-orange.webp')}
+          alt=""
+          width={520}
+          height={482}
+          loading="lazy"
+          className="u-float pointer-events-none absolute right-[5vw] top-12 hidden h-32 w-auto opacity-90 xl:block"
+        />
+
+        <div className="u-container relative grid items-center gap-[var(--spacing-fluid-4)] lg:grid-cols-[1fr_1.1fr]">
+          <div className="flex flex-col gap-6">
+            <SectionHeading
+              eyebrow="Le comptoir"
+              tone="light"
+              title={
+                <>
+                  On ne repart pas
+                  <br />
+                  tout de suite.
+                </>
+              }
+              intro={
+                <>
+                  Une salle de sport, on y entre et on en sort. Ici, la salle d’attente est faite pour qu’on
+                  s’arrête&nbsp;: on prend un café, on discute avec la personne du créneau suivant, on repart avec
+                  un t-shirt ou une paire de lunettes de piscine.
+                </>
+              }
+              className="[&_h2]:text-creme [&_p]:text-creme/75"
+            />
+            <Reveal delay={120}>
+              <p className="font-hand text-[length:var(--text-2xl)] leading-snug text-creme/85">
+                « Le sport doit faire partie du quotidien. Le lieu aussi. »
+              </p>
+            </Reveal>
+          </div>
+
+          <ul className="grid gap-3 sm:grid-cols-2">
+            {COUNTER.map((item, i) => (
+              <Reveal as="li" key={item.title} delay={i * 90}>
+                <div className="flex h-full flex-col gap-2 rounded-[1.5rem] border border-creme/15 bg-creme/8 p-5">
+                  <span aria-hidden="true" className={`h-1 w-10 rounded-full ${item.color}`} />
+                  <h3 className="text-[length:var(--text-xl)]">{item.title}</h3>
+                  <p className="text-[length:var(--text-sm)] leading-relaxed text-creme/72">{item.detail}</p>
+                </div>
+              </Reveal>
+            ))}
+          </ul>
         </div>
       </section>
 

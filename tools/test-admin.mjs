@@ -4,7 +4,8 @@ import { serve } from './serve.mjs';
 
 const width = Number(process.argv[2] ?? 1440);
 const heights = { 390: 844, 768: 1024, 1440: 900 };
-const server = await serve(4321);
+const PORT = Number(process.env.TEST_PORT ?? 4332);
+const server = await serve(PORT);
 const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox'] });
 const ctx = await browser.newContext({ viewport: { width, height: heights[width] ?? 900 }, locale: 'fr-FR' });
 const page = await ctx.newPage();
@@ -12,7 +13,7 @@ const errors = [];
 page.on('pageerror', (e) => errors.push(`JS: ${e.message}`));
 page.on('console', (m) => m.type() === 'error' && !m.text().includes('404') && errors.push(`CONSOLE: ${m.text()}`));
 
-await page.goto('http://localhost:4321/connexion/', { waitUntil: 'networkidle' });
+await page.goto(`http://localhost:${PORT}/connexion/`, { waitUntil: 'networkidle' });
 await page.waitForTimeout(1800);
 const refuse = page.getByRole('button', { name: 'Tout refuser' });
 if (await refuse.isVisible().catch(() => false)) await refuse.click();

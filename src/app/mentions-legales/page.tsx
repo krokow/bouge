@@ -49,7 +49,7 @@ export default function MentionsLegalesPage() {
           </tr>
           <tr>
             <td>Directeur de la publication</td>
-            <td>{STUDIO.coach.firstName}, gérant</td>
+            <td>{STUDIO.coach.fullName}, gérant</td>
           </tr>
           <tr>
             <td>Téléphone</td>

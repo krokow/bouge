@@ -3,7 +3,7 @@
 /**
  * Fil d'étapes du tunnel de réservation.
  *
- * Sur grand écran, les sept étapes sont visibles d'un coup. Sur mobile, la
+ * Sur grand écran, toutes les étapes sont visibles d'un coup. Sur mobile, la
  * liste défile horizontalement et l'étape courante est recentrée
  * automatiquement — on ne perd jamais de vue où l'on en est, et la barre ne
  * mange pas la moitié de l'écran.
@@ -57,7 +57,10 @@ export function Stepper({
           const state = index === current ? 'current' : index < furthest ? 'done' : 'todo';
           const reachable = index <= furthest;
           return (
-            <li key={step.id} className="snap-center">
+            // `shrink-0` est indispensable : sans lui, les étapes se
+            // compriment pour tenir dans la largeur et le libellé passe
+            // par-dessus la pastille numérotée.
+            <li key={step.id} className="shrink-0 snap-center">
               <button
                 type="button"
                 data-active={index === current}

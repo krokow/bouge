@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { Stepper, type StepDefinition } from './Stepper';
 import { BookingSummary, BookingSummaryBar, totalCents } from './BookingSummary';
 import { OfferStep, ParticipantsStep, offersFor } from './steps/ChoiceSteps';
-import { DateStep, TimeStep } from './steps/ScheduleSteps';
+import { ScheduleStep } from './steps/ScheduleSteps';
 import {
   AuthStep,
   ConfirmationStep,
@@ -24,18 +24,19 @@ import type { Booking, IsoDate, OfferId, PaymentMethod, Time } from '@/lib/types
 const STEPS: StepDefinition[] = [
   { id: 'participants', label: 'Participants', shortLabel: 'Qui' },
   { id: 'offer', label: 'Formule', shortLabel: 'Formule' },
-  { id: 'date', label: 'Date', shortLabel: 'Date' },
-  { id: 'time', label: 'Créneau', shortLabel: 'Heure' },
+  { id: 'schedule', label: 'Date et créneau', shortLabel: 'Créneau' },
   { id: 'auth', label: 'Vos informations', shortLabel: 'Infos' },
   { id: 'payment', label: 'Paiement', shortLabel: 'Paiement' },
   { id: 'confirmation', label: 'Confirmation', shortLabel: 'Terminé' },
 ];
 
+/** Dernière étape avant la confirmation (le bouton y devient « Payer »). */
+const LAST_INPUT_STEP = STEPS.length - 2;
+
 const STEP_TITLES = [
   { title: 'Vous venez à combien ?', intro: 'Trois personnes maximum par séance — jamais plus.' },
   { title: 'Quelle formule ?', intro: 'Seules les formules compatibles avec votre groupe sont affichées.' },
-  { title: 'Quel jour ?', intro: 'Les créneaux affichés sont réellement libres, en direct.' },
-  { title: 'Quelle heure ?', intro: 'Choisissez le moment qui vous arrange le mieux.' },
+  { title: 'Quand venez-vous ?', intro: 'Cliquez sur un jour : ses créneaux réellement libres s’affichent aussitôt.' },
   { title: 'Qui êtes-vous ?', intro: 'Un compte permet de reporter ou annuler votre séance en autonomie.' },
   { title: 'Comment réglez-vous ?', intro: 'Sur place le jour J, ou en ligne maintenant. Au choix.' },
   { title: 'Séance confirmée', intro: '' },
@@ -108,6 +109,16 @@ export function BookingFunnel() {
     setStartTime(null);
   }, [date]);
 
+  // À l'arrivée sur l'étape du planning, le calendrier s'ouvre sur la prochaine
+  // date réellement disponible : une décision de moins à prendre, et des
+  // créneaux visibles immédiatement. Placé ici plutôt que dans le bouton
+  // « Continuer » pour couvrir aussi l'arrivée directe par un lien
+  // « /reserver/?offre=… », qui saute les deux premières étapes.
+  useEffect(() => {
+    if (step !== 2 || date) return;
+    setDate(firstAvailableDate(availability));
+  }, [step, date, availability]);
+
   const canContinue = (() => {
     switch (step) {
       case 0:
@@ -115,12 +126,10 @@ export function BookingFunnel() {
       case 1:
         return offerId !== null;
       case 2:
-        return date !== null;
+        return date !== null && startTime !== null;
       case 3:
-        return startTime !== null;
-      case 4:
         return user !== null;
-      case 5:
+      case 4:
         return paymentMethod === 'onsite' || (paymentMethod === 'online' && isCardComplete(card));
       default:
         return false;
@@ -134,12 +143,7 @@ export function BookingFunnel() {
   };
 
   const handleNext = async () => {
-    if (step < 5) {
-      // En arrivant sur le calendrier, on propose d'emblée la prochaine date
-      // réellement disponible : une étape de moins pour l'utilisateur.
-      if (step === 1 && !date) {
-        setDate(firstAvailableDate(availability));
-      }
+    if (step < LAST_INPUT_STEP) {
       goTo(step + 1);
       return;
     }
@@ -158,7 +162,7 @@ export function BookingFunnel() {
     });
     if (created) {
       setBooking(created);
-      goTo(6);
+      goTo(STEPS.length - 1);
     }
   };
 
@@ -193,12 +197,16 @@ export function BookingFunnel() {
             {step === 0 && <ParticipantsStep value={participants} onChange={setParticipants} />}
             {step === 1 && <OfferStep participants={participants} value={offerId} onChange={setOfferId} />}
             {step === 2 && (
-              <DateStep value={date} onSelect={setDate} availability={availability} maxDate={maxDate} />
+              <ScheduleStep
+                date={date}
+                time={startTime}
+                onDateChange={setDate}
+                onTimeChange={setStartTime}
+                availability={availability}
+                maxDate={maxDate}
+              />
             )}
-            {step === 3 && date && (
-              <TimeStep date={date} value={startTime} onSelect={setStartTime} availability={availability} />
-            )}
-            {step === 4 && (
+            {step === 3 && (
               <AuthStep
                 user={user}
                 participants={participants}
@@ -208,7 +216,7 @@ export function BookingFunnel() {
                 onNotesChange={setNotes}
               />
             )}
-            {step === 5 && (
+            {step === 4 && (
               <PaymentStep
                 method={paymentMethod}
                 onMethodChange={setPaymentMethod}
@@ -217,11 +225,11 @@ export function BookingFunnel() {
                 amountCents={totalCents(summary)}
               />
             )}
-            {step === 6 && booking && user && <ConfirmationStep booking={booking} user={user} />}
+            {step === 5 && booking && user && <ConfirmationStep booking={booking} user={user} />}
           </div>
 
           {/* Navigation — masquée sur l'écran de confirmation */}
-          {step < 6 && (
+          {step < STEPS.length - 1 && (
             <div className="flex flex-col-reverse gap-3 border-t border-anthracite/10 pt-5 sm:flex-row sm:items-center sm:justify-between">
               <Button
                 variant="ghost"
@@ -235,7 +243,7 @@ export function BookingFunnel() {
               <Button size="lg" onClick={() => void handleNext()} disabled={!canContinue || pending} className="sm:min-w-56">
                 {pending
                   ? 'Validation…'
-                  : step === 5
+                  : step === LAST_INPUT_STEP
                     ? paymentMethod === 'online'
                       ? 'Payer et confirmer'
                       : 'Confirmer la réservation'

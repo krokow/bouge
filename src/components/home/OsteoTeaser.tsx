@@ -37,7 +37,7 @@ export function OsteoTeaser() {
 
                 <ul className="flex flex-col gap-2.5 text-[length:var(--text-sm)] text-anthracite/78">
                   {[
-                    'Cabinet dédié et salle d’attente séparée de l’espace de coaching',
+                    'Cabinet dédié, et salle d’attente commune avec son comptoir',
                     'Échange direct entre l’ostéopathe et votre coach, avec votre accord',
                     'Créneaux dédiés, indépendants du planning des séances',
                   ].map((item) => (

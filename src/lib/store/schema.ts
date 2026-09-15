@@ -18,8 +18,8 @@ export interface DatabaseShape {
   session: Session | null;
 }
 
-export const DB_VERSION = 3;
-export const DB_STORAGE_KEY = 'bouge.db.v3';
+export const DB_VERSION = 4;
+export const DB_STORAGE_KEY = 'bouge.db.v4';
 
 export function emptyDatabase(): DatabaseShape {
   return {

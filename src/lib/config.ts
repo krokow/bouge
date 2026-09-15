@@ -3,10 +3,9 @@ import type { ScheduleConfig } from './types';
 /**
  * Paramètres du studio.
  *
- * ⚠️ AVANT MISE EN LIGNE — tout ce bloc est du contenu de démonstration.
- * Les coordonnées, le numéro de téléphone (plage 01 99 00 XX XX réservée à la
- * fiction par l'ARCEP, elle ne sonne donc chez personne) et l'adresse doivent
- * être remplacés par les informations réelles du studio.
+ * Le nom du coach, l'adresse et le téléphone sont les informations réelles,
+ * communiquées par le studio. Les accès (transports) restent à confirmer :
+ * voir docs/CONTENU.md.
  */
 export const STUDIO = {
   name: 'BOUGE.',
@@ -17,24 +16,29 @@ export const STUDIO = {
   since: 2026,
   coach: {
     firstName: 'Melvin',
+    lastName: 'Maillot',
+    fullName: 'Melvin Maillot',
     role: 'Coach sportif diplômé STAPS',
     years: 10,
   },
   address: {
-    street: '18 rue de l’Industrie',
+    street: '8 rue Albert Simonin',
     postalCode: '92400',
     city: 'Courbevoie',
     country: 'France',
   },
-  phone: '01 99 00 14 25',
-  phoneHref: '+33199001425',
+  phone: '06 74 90 08 02',
+  phoneHref: '+33674900802',
   email: 'bonjour@bouge-studio.fr',
   instagram: 'https://instagram.com/bouge.studio',
-  /** Transports à proximité, affichés sur la page Contact. */
+  /**
+   * Transports à proximité, affichés sur la page Contact.
+   * ⚠️ Temps de trajet à vérifier sur place avant la mise en ligne.
+   */
   access: [
-    { label: 'Ligne 1 — Esplanade de La Défense', detail: '8 min à pied' },
-    { label: 'Transilien L — Courbevoie', detail: '6 min à pied' },
-    { label: 'Bus 275 / 178 — arrêt Industrie', detail: 'au pied du studio' },
+    { label: 'Transilien L — Courbevoie', detail: 'à quelques minutes à pied' },
+    { label: 'Ligne 1 — Esplanade de La Défense', detail: 'à une dizaine de minutes' },
+    { label: 'Stationnement', detail: 'places en voirie dans la rue' },
   ],
 } as const;
 

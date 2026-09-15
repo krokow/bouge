@@ -7,23 +7,30 @@ cohérents, mais ils n'ont pas été validés par le studio.
 
 Voici ce qui doit être relu ou corrigé, par ordre d'importance.
 
-## 1. Inventé, à remplacer par du réel
+## 1. Confirmé par le studio — à jour dans le site
+
+| Information | Valeur |
+|---|---|
+| Coach | Melvin Maillot |
+| Adresse | 8 rue Albert Simonin, 92400 Courbevoie |
+| Téléphone | 06 74 90 08 02 |
+| Salle d'attente | Articles à vendre + boissons chaudes et froides |
+
+## 2. Encore inventé, à remplacer par du réel
 
 | Information | Valeur actuelle | Où |
 |---|---|---|
-| Adresse | 18 rue de l'Industrie, 92400 Courbevoie | `src/lib/config.ts` |
-| Téléphone | 01 99 00 14 25 — numéro de la plage réservée à la fiction par l'ARCEP, il ne sonne chez personne | `src/lib/config.ts` |
 | Email | bonjour@bouge-studio.fr | `src/lib/config.ts` |
 | Instagram | instagram.com/bouge.studio | `src/lib/config.ts` |
-| Accès (métro, bus) | Lignes plausibles pour Courbevoie | `src/lib/config.ts` |
-| Nom de famille du coach | « Melvin Cordier » | `src/lib/store/seed.ts` |
+| Accès et temps de trajet | Formulations volontairement prudentes, non vérifiées sur place | `src/lib/config.ts` |
 | Témoignages clients | Trois avis inventés | `src/components/home/Testimonials.tsx` |
+| Ouverture du cabinet d'ostéopathie | « l'an prochain » | `src/components/home/OsteoTeaser.tsx` |
 
 > ⚠️ Les **témoignages** doivent impérativement être remplacés par de vrais avis
 > avant la mise en ligne. Publier des avis fictifs présentés comme réels est une
 > pratique commerciale trompeuse (art. L121-2 du code de la consommation).
 
-## 2. Tarifs et formules — à valider
+## 3. Tarifs et formules — à valider
 
 Définis dans `src/data/offers.ts` :
 
@@ -39,7 +46,7 @@ Les descriptions, les arguments et le public visé de chaque formule sont
 (page d'accueil, page Offres, tableau comparatif, tunnel de réservation, CGV)
 se met à jour automatiquement.
 
-## 3. Horaires et règles de réservation
+## 4. Horaires et règles de réservation
 
 Dans `src/lib/config.ts` (`SCHEDULE`) :
 
@@ -53,7 +60,7 @@ Dans `src/lib/config.ts` (`SCHEDULE`) :
 Ces valeurs alimentent à la fois le tunnel de réservation, l'espace gérant et
 les CGV : il n'y a qu'un seul endroit à modifier.
 
-## 4. Histoire du fondateur
+## 5. Histoire du fondateur
 
 La page *À propos* reprend le récit des *Brand Guidelines* (natation, perte de
 sa mère à 18 ans, dix ans d'enseignement sans vitrine, diplôme STAPS à 30 ans).
@@ -61,21 +68,31 @@ C'est un récit personnel : **à faire valider mot à mot par Melvin**, notammen
 le passage sur sa mère, qu'il peut légitimement vouloir retirer d'un site
 public.
 
-## 5. Ostéopathie
+## 6. Ostéopathie
 
 La page annonce une ouverture « l'an prochain » et décrit un cabinet dédié avec
 salle d'attente. À ajuster dès que la date et le praticien sont connus. Le
 formulaire « être prévenu » n'envoie rien pour l'instant.
 
-## 6. Écart avec les Brand Guidelines
+## 7. Le comptoir : boutique et boissons
 
-Les *Brand Guidelines* décrivent BOUGE. comme un **concept store** : espace de
-coaching **+ coffee shop + boutique de vêtements et d'accessoires**.
+Point tranché avec le studio : *« dans la salle d'attente il y aura des articles
+à vendre et la possibilité de consommer boissons froides ou chaudes »*.
 
-Le brief de ce site décrit un **studio sport premium** avec douche et vestiaire,
-et un **cabinet d'ostéopathie** à venir — sans coffee shop ni boutique.
+C'est intégré comme un **comptoir dans la salle d'attente**, et non comme une
+boutique en ligne : le site ne vend rien, il annonce ce qu'on trouve sur place.
+Concrètement :
 
-Le site a été construit sur le brief (studio + ostéopathie), en gardant le ton,
-les valeurs et l'univers de la charte. **Si le coffee shop et la boutique font
-toujours partie du projet, il manque deux pages** et une place dans la
-navigation. C'est un point à trancher avec le studio.
+- une section **« Le comptoir »** sur la page *Le studio*, avec les quatre
+  catégories (boissons chaudes, boissons fraîches, vestiaire BOUGE., produits
+  de natation) ;
+- la salle d'attente présentée comme un espace commun au coaching et au futur
+  cabinet d'ostéopathie, sur les deux pages concernées ;
+- deux atouts supplémentaires sur la page d'accueil.
+
+Reste à préciser par le studio :
+
+- la **liste et les prix** des articles réellement proposés ;
+- si les boissons sont **payantes ou offertes** aux clients d'une séance ;
+- si le comptoir doit un jour devenir une **vraie boutique en ligne** — ce qui
+  serait un chantier distinct (catalogue, stocks, paiement, livraison).

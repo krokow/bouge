@@ -8,6 +8,8 @@ const FEATURES = [
   { title: 'Un seul groupe à la fois', detail: 'Pas de file d’attente devant une machine. L’espace est à vous.' },
   { title: 'Matériel choisi', detail: 'Charges libres, kettlebells, élastiques, rameur. Ce qui sert, rien d’autre.' },
   { title: 'Lumière et calme', detail: 'Pas de néons blafards ni de musique poussée à fond. On s’entend parler.' },
+  { title: 'Un comptoir', detail: 'Boissons chaudes et fraîches, et le vestiaire BOUGE. sur les étagères.' },
+  { title: 'Une salle d’attente', detail: 'Pour souffler avant, discuter après. Et bientôt, voir l’ostéopathe.' },
 ];
 
 export function StudioPreview() {
@@ -34,8 +36,8 @@ export function StudioPreview() {
               className="aspect-[4/5] w-full rounded-[1.5rem] object-cover"
             />
             <img
-              src={asset('/media/studio-douches.webp')}
-              alt="Les douches"
+              src={asset('/media/studio-boutique.webp')}
+              alt="Le comptoir : boissons et boutique"
               width={1600}
               height={1100}
               loading="lazy"
@@ -56,9 +58,9 @@ export function StudioPreview() {
             }
             intro={
               <>
-                Une seule pièce, pensée pour qu’on puisse y travailler sérieusement sans avoir l’impression d’être
-                dans un supermarché du muscle. Vous poussez la porte, c’est votre créneau, il n’y a personne
-                d’autre.
+                Une pièce d’entraînement pensée pour qu’on puisse y travailler sérieusement sans avoir
+                l’impression d’être dans un supermarché du muscle, et une salle d’attente où l’on a envie de
+                rester cinq minutes de plus. Vous poussez la porte, c’est votre créneau.
               </>
             }
           />

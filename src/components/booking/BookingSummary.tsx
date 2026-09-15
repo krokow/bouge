@@ -27,9 +27,15 @@ function Rows({ data }: { data: SummaryData }) {
   return (
     <dl className="flex flex-col gap-3 text-[length:var(--text-sm)]">
       <Row label="Participants">
-        {data.participants} {pluralize(data.participants, 'personne')}
+        {/* Valeur et mention sur deux lignes distinctes : sur une colonne
+            étroite, un seul flux de texte passait à la ligne et débordait. */}
+        <span className="block">
+          {data.participants} {pluralize(data.participants, 'personne')}
+        </span>
         {data.participants === MAX_PARTICIPANTS && (
-          <span className="ml-1.5 text-anthracite/40">(maximum)</span>
+          <span className="block text-[length:var(--text-2xs)] font-normal text-anthracite/40">
+            maximum du studio
+          </span>
         )}
       </Row>
       <Row label="Formule">{offer ? offer.name : <Pending />}</Row>
@@ -49,11 +55,12 @@ function Rows({ data }: { data: SummaryData }) {
 
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="flex items-baseline justify-between gap-4 border-b border-anthracite/8 pb-3 last:border-0 last:pb-0">
+    <div className="flex items-baseline justify-between gap-3 border-b border-anthracite/8 pb-3 last:border-0 last:pb-0">
       <dt className="shrink-0 text-[length:var(--text-2xs)] font-bold uppercase tracking-[0.12em] text-anthracite/45">
         {label}
       </dt>
-      <dd className="text-right font-semibold text-anthracite">{children}</dd>
+      {/* `min-w-0` autorise la valeur à se réduire plutôt qu'à pousser la ligne. */}
+      <dd className="min-w-0 text-right font-semibold text-anthracite">{children}</dd>
     </div>
   );
 }

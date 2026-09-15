@@ -1,7 +1,7 @@
 import type { ComponentPropsWithoutRef, ReactNode } from 'react';
 
 const INPUT_CLASS =
-  'min-h-12 w-full rounded-xl border-2 border-anthracite/15 bg-creme px-4 text-anthracite outline-none ' +
+  'min-h-12 w-full min-w-0 max-w-full rounded-xl border-2 border-anthracite/15 bg-creme px-4 text-anthracite outline-none ' +
   'transition-colors duration-200 placeholder:text-anthracite/35 focus:border-orange ' +
   'aria-[invalid=true]:border-orange aria-[invalid=true]:bg-orange/5';
 

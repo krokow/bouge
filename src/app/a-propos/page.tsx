@@ -1,8 +1,8 @@
 import type { Metadata } from 'next';
 import { ArrowRight, ButtonLink } from '@/components/ui/Button';
 import { PageHero } from '@/components/ui/PageHero';
+import { ValuesBento } from '@/components/about/ValuesBento';
 import { Reveal } from '@/components/ui/Reveal';
-import { SectionHeading } from '@/components/ui/SectionHeading';
 import { asset, STUDIO } from '@/lib/config';
 import { BOOKING_HREF } from '@/lib/nav';
 
@@ -12,15 +12,6 @@ export const metadata: Metadata = {
     `${STUDIO.coach.firstName}, coach diplômé STAPS, a ouvert ${STUDIO.name} à ${STUDIO.address.city} ` +
     'après plus de dix ans passés à enseigner le sport. Son histoire, sa méthode, ses valeurs.',
 };
-
-/** Valeurs de marque — reprises telles quelles des Brand Guidelines (p.5). */
-const VALUES = [
-  { name: 'Bienveillance', text: 'Une attention sincère portée à chacun, dans l’accompagnement comme dans l’accueil.' },
-  { name: 'Longévité', text: 'Une vision inscrite dans la durée, pour votre santé comme pour le projet lui-même.' },
-  { name: 'Équilibre', text: 'Le sport comme art de vivre, entre performance, détente et bien-être.' },
-  { name: 'Partage', text: 'L’envie de faire découvrir le goût du sport et de fédérer une communauté.' },
-  { name: 'Savoir-faire', text: 'Un coaching légitimé par un diplôme STAPS et dix ans de pratique de terrain.' },
-];
 
 export default function AProposPage() {
   return (
@@ -43,13 +34,13 @@ export default function AProposPage() {
             <figure className="m-0 flex flex-col gap-3">
               <img
                 src={asset('/media/melvin-portrait.webp')}
-                alt={`${STUDIO.coach.firstName}, fondateur et coach du studio`}
+                alt={`${STUDIO.coach.fullName}, fondateur et coach du studio`}
                 width={1600}
                 height={1100}
                 className="aspect-[4/5] w-full rounded-[1.75rem] object-cover"
               />
               <figcaption className="font-hand text-2xl text-anthracite/60">
-                {STUDIO.coach.firstName}, {STUDIO.coach.role.toLowerCase()}.
+                {STUDIO.coach.fullName}, {STUDIO.coach.role.toLowerCase()}.
               </figcaption>
             </figure>
           </Reveal>
@@ -114,27 +105,7 @@ export default function AProposPage() {
         </div>
       </section>
 
-      <section className="u-section bg-anthracite text-creme">
-        <div className="u-container">
-          <SectionHeading
-            eyebrow="Nos valeurs"
-            tone="light"
-            align="center"
-            title="Cinq mots qui tiennent le lieu"
-            className="mx-auto [&_h2]:text-creme"
-          />
-          <ul className="mt-[var(--spacing-fluid-5)] grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {VALUES.map((value, i) => (
-              <Reveal as="li" key={value.name} delay={i * 80}>
-                <div className="flex h-full flex-col gap-2 rounded-[1.5rem] border border-creme/12 bg-creme/6 p-6">
-                  <h3 className="text-[length:var(--text-xl)] text-orange">{value.name}</h3>
-                  <p className="text-[length:var(--text-sm)] leading-relaxed text-creme/72">{value.text}</p>
-                </div>
-              </Reveal>
-            ))}
-          </ul>
-        </div>
-      </section>
+      <ValuesBento />
 
       <section className="u-section bg-orange text-creme">
         <div className="u-container flex flex-col items-center gap-6 text-center">
