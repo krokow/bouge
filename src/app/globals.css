@@ -227,20 +227,27 @@
   }
 
   /* Texte en contour, pour les titres non sélectionnés du sommaire des
-     formules. Encapsulé dans @supports : sans le tracé, `color: transparent`
+     formules.
+     La couleur est posée ici et NON par un utilitaire Tailwind : les
+     utilitaires sont dans une couche plus prioritaire, un `text-anthracite/35`
+     écraserait le `color: transparent` et le contour ne serait qu'un texte
+     plein légèrement épaissi.
+     Le tout est encapsulé dans @supports : sans le tracé, `color: transparent`
      rendrait le texte purement invisible. */
   .u-outline-text {
-    color: currentColor;
+    color: color-mix(in srgb, var(--color-anthracite) 38%, transparent);
+    transition: color 0.4s var(--ease-out-soft), -webkit-text-stroke-color 0.4s var(--ease-out-soft);
   }
 
-  @supports (-webkit-text-stroke: 1px currentColor) {
+  @supports (-webkit-text-stroke: 1px black) {
     .u-outline-text {
       color: transparent;
-      -webkit-text-stroke: 1.5px currentColor;
+      -webkit-text-stroke: 1.6px color-mix(in srgb, var(--color-anthracite) 42%, transparent);
     }
-    .group:hover .u-outline-text {
-      color: currentColor;
-      -webkit-text-stroke: 0;
+
+    .group:hover .u-outline-text,
+    .group:focus-visible .u-outline-text {
+      -webkit-text-stroke-color: color-mix(in srgb, var(--color-anthracite) 80%, transparent);
     }
   }
 

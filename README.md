@@ -43,10 +43,11 @@ Tous les comptes clients de démonstration utilisent `demo1234`. Le bouton
 ## Ce que contient le site
 
 **Pages publiques** — accueil (fond vidéo, animations au défilement), nos
-offres (sélecteur éditorial en grand format), le studio (espaces, comptoir
-boissons et boutique, règles du lieu), ostéopathie (« bientôt disponible »),
-à propos, contact, mentions légales, CGV, politique de confidentialité, page
-404. Bandeau cookies conforme RGPD sur l'ensemble du site.
+offres (section épinglée : le défilement fait traverser les quatre formules
+l'une après l'autre), le studio (espaces, comptoir boissons et boutique,
+règles du lieu), ostéopathie (« bientôt disponible »), à propos, contact,
+mentions légales, CGV, politique de confidentialité, page 404. Bandeau
+cookies conforme RGPD sur l'ensemble du site.
 
 **Tunnel de réservation** (`/reserver/`) — six étapes : participants (1 à 3),
 formule, date et créneau sur un même écran (cliquer un jour affiche aussitôt
@@ -134,6 +135,10 @@ Le site est fluide, sans paliers brusques :
 - **typographie et espacements en `clamp()`** — interpolation continue entre
   375 px et 1920 px ;
 - **grilles en `auto-fill`** — le nombre de colonnes suit la place disponible ;
+- **section épinglée des offres** — active à partir de 1024×760 px ; en dessous,
+  ou si les animations sont réduites, les quatre formules sont simplement
+  empilées. Le défilement natif n'est jamais intercepté : inertie, clavier,
+  barre de défilement et retour arrière fonctionnent normalement ;
 - **fond vidéo** — version allégée sur téléphone (1,7 Mo contre 5,9),
   `object-fit: cover` pour ne jamais déformer, voile de lisibilité garantissant
   le contraste du logo et du bouton d'appel à l'action ;
