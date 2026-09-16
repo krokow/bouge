@@ -3,13 +3,24 @@
 import { useEffect, useRef, useState } from 'react';
 import { HeroVideo } from './HeroVideo';
 import { ArrowRight, ButtonLink } from '@/components/ui/Button';
-import { asset, MAX_PARTICIPANTS, STUDIO } from '@/lib/config';
+import { asset, INSTAGRAM_HANDLE, INSTAGRAM_URL, MAX_PARTICIPANTS, SOCIAL, STUDIO } from '@/lib/config';
 import { BOOKING_HREF } from '@/lib/nav';
+import { InstagramIcon } from '@/components/ui/InstagramIcon';
 
-const STATS = [
+/**
+ * Chiffres clés du premier écran.
+ *
+ * Le dernier porte un `href` : c'est le lien discret vers Instagram demandé
+ * pour la page d'accueil. Il est glissé dans cette rangée plutôt qu'ajouté
+ * ailleurs pour deux raisons : il reste dans le flux — donc il ne peut pas
+ * chevaucher le bandeau de consentement comme le ferait un élément posé dans
+ * un coin — et il se lit comme une référence du coach, pas comme une réclame.
+ */
+const STATS: readonly { value: string; label: string; href?: string }[] = [
   { value: `${MAX_PARTICIPANTS}`, label: 'personnes maximum par séance' },
   { value: `${STUDIO.coach.years}+`, label: 'années de coaching' },
   { value: '7h—21h', label: 'du lundi au vendredi' },
+  { value: `+${SOCIAL.instagram.followersLabel}`, label: 'abonnés sur Instagram', href: INSTAGRAM_URL },
 ];
 
 export function Hero() {
@@ -153,20 +164,56 @@ export function Hero() {
 
         {/* Chiffres clés */}
         <ul
-          className="mt-[clamp(2.5rem,7vh,4.5rem)] grid w-full max-w-2xl grid-cols-3 gap-x-2 gap-y-4 border-t border-creme/15 pt-6"
+          className="mt-[clamp(2.5rem,7vh,4.5rem)] grid w-full max-w-3xl grid-cols-2 gap-x-2 gap-y-5 border-t border-creme/15 pt-6 sm:grid-cols-4"
           style={{
             opacity: mounted ? 1 : 0,
             transition: 'opacity 1s ease 0.8s',
           }}
         >
-          {STATS.map((stat) => (
-            <li key={stat.label} className="flex flex-col items-center gap-1">
+          {STATS.map((stat) => {
+            const value = (
               <span className="font-display text-[length:var(--text-2xl)] leading-none text-orange">{stat.value}</span>
+            );
+            const label = (
               <span className="max-w-[16ch] text-balance text-[length:var(--text-2xs)] uppercase tracking-[0.12em] text-creme/60">
                 {stat.label}
               </span>
-            </li>
-          ))}
+            );
+            const linkLabel = (
+              <span className="max-w-[16ch] text-balance text-[length:var(--text-2xs)] uppercase tracking-[0.12em] text-creme/60 transition-colors group-hover:text-orange">
+                abonnés sur{' '}
+                {/* Le glyphe est posé dans le fil du texte, pas à côté : sur
+                    deux lignes, un icône placé en flex se retrouverait centré
+                    dans le vide à gauche du libellé. */}
+                <span className="whitespace-nowrap">
+                  <InstagramIcon className="mr-1 inline-block size-3.5 align-[-0.2em]" />
+                  Instagram
+                </span>
+              </span>
+            );
+
+            return (
+              <li key={stat.label} className="flex flex-col items-center gap-1">
+                {stat.href ? (
+                  <a
+                    href={stat.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={`Le compte Instagram ${INSTAGRAM_HANDLE} — plus de ${SOCIAL.instagram.followersLabel} abonnés (nouvel onglet)`}
+                    className="group flex flex-col items-center gap-1 no-underline"
+                  >
+                    {value}
+                    {linkLabel}
+                  </a>
+                ) : (
+                  <>
+                    {value}
+                    {label}
+                  </>
+                )}
+              </li>
+            );
+          })}
         </ul>
       </div>
 

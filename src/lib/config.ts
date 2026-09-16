@@ -47,7 +47,6 @@ export const STUDIO = {
   phone: '06 74 90 08 02',
   phoneHref: '+33674900802',
   email: 'bonjour@bouge-studio.fr',
-  instagram: 'https://instagram.com/bouge.studio',
   /**
    * Transports à proximité, affichés sur la page Contact.
    * ⚠️ Temps de trajet à vérifier sur place avant la mise en ligne.
@@ -58,6 +57,40 @@ export const STUDIO = {
     { label: 'Stationnement', detail: 'places en voirie dans la rue' },
   ],
 } as const;
+
+/**
+ * Réseaux sociaux.
+ *
+ * Le compte Instagram est celui de Melvin, pas celui du studio : c'est lui qui
+ * porte l'audience, et le studio n'a pas encore de compte propre. Si BOUGE.
+ * ouvre le sien un jour, il suffira d'ajouter une seconde entrée ici — rien
+ * d'autre dans le site ne code en dur le pseudonyme ni l'adresse.
+ *
+ * `followers` est saisi à la main, volontairement. Le nombre d'abonnés se lit
+ * bien par l'API Instagram (champ `followers_count`), mais cela suppose un
+ * compte professionnel, une application Meta et un jeton renouvelé côté
+ * serveur : beaucoup de fragilité pour un seul chiffre. On l'affiche donc
+ * arrondi et précédé d'un « + », formulation qui reste vraie tant que le
+ * compte grossit. À relire de temps en temps.
+ */
+export const SOCIAL = {
+  instagram: {
+    /** Sans l'arobase : elle est ajoutée à l'affichage. */
+    handle: 'melvinmaillot',
+    url: 'https://www.instagram.com/melvinmaillot/',
+    /** Ordre de grandeur, pas un compteur. Voir le commentaire ci-dessus. */
+    followers: 60_000,
+    followersLabel: '60 K',
+    /** Passe à `true` le jour où le chiffre vient réellement de l'API. */
+    live: false,
+  },
+} as const;
+
+/** Adresse du profil Instagram, raccourci utilisé un peu partout. */
+export const INSTAGRAM_URL = SOCIAL.instagram.url;
+
+/** Pseudonyme précédé de son arobase, tel qu'il s'affiche. */
+export const INSTAGRAM_HANDLE = `@${SOCIAL.instagram.handle}`;
 
 /** Horaires affichés au public (dérivés de SCHEDULE, tenus synchronisés). */
 export const OPENING_HOURS = [

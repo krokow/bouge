@@ -15,21 +15,33 @@ Voici ce qui doit être relu ou corrigé, par ordre d'importance.
 | Adresse | 8 rue Albert Simonin, 92400 Courbevoie |
 | Téléphone | 06 74 90 08 02 |
 | Salle d'attente | Articles à vendre + boissons chaudes et froides |
+| Instagram | [@melvinmaillot](https://www.instagram.com/melvinmaillot/) — compte personnel de Melvin, pas du studio |
 
 ## 2. Encore inventé, à remplacer par du réel
 
 | Information | Valeur actuelle | Où |
 |---|---|---|
 | Email | bonjour@bouge-studio.fr | `src/lib/config.ts` |
-| Instagram | instagram.com/bouge.studio | `src/lib/config.ts` |
 | Accès et temps de trajet | Formulations volontairement prudentes, non vérifiées sur place | `src/lib/config.ts` |
 | **Coordonnées du marqueur sur la carte** | **Pointent sur le quartier, pas sur le numéro** | `src/lib/config.ts` → `STUDIO.coordinates` |
 | Témoignages clients | Trois avis inventés | `src/components/home/Testimonials.tsx` |
+| Nombre d'abonnés Instagram | `60 K`, saisi à la main et affiché avec un « + » | `src/lib/config.ts` → `SOCIAL.instagram` |
+| Publications Instagram affichées | Quatre visuels du studio et des légendes écrites pour la maquette | `src/lib/instagram.ts` |
 | Ouverture du cabinet d'ostéopathie | « l'an prochain » | `src/components/home/OsteoTeaser.tsx` |
 
 > ⚠️ Les **témoignages** doivent impérativement être remplacés par de vrais avis
 > avant la mise en ligne. Publier des avis fictifs présentés comme réels est une
 > pratique commerciale trompeuse (art. L121-2 du code de la consommation).
+
+> ⚠️ Les quatre **publications Instagram** de la page À propos ne reprennent
+> aucune publication réelle&nbsp;: ce sont des visuels du studio accompagnés de
+> légendes écrites pour la maquette. Les remplacer par de vraies publications,
+> ou vider le tableau `CURATED` de `src/lib/instagram.ts` — la section se
+> réaffiche alors sans la grille, sans rien casser.
+>
+> Le **nombre d'abonnés** est écrit en dur. Il est affiché arrondi et précédé
+> d'un « + » pour rester vrai tant que le compte grossit, mais il mérite d'être
+> relu de temps en temps.
 
 ## 3. Tarifs et formules — à valider
 

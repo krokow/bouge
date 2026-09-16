@@ -138,6 +138,11 @@ export default function ConfidentialitePage() {
         Le site n’intègre aucun bouton de réseau social traçant, aucune police hébergée par un tiers et aucune
         régie publicitaire&nbsp;: les typographies sont servies depuis notre propre domaine.
       </p>
+      <p>
+        Les liens vers le compte Instagram du studio sont de simples liens&nbsp;: aucun contenu n’est chargé depuis
+        Instagram et aucune information n’est transmise à ce réseau tant que vous ne cliquez pas. Si vous cliquez,
+        vous quittez le site et la politique de confidentialité d’Instagram s’applique alors à votre visite.
+      </p>
 
       <h3>La carte de la page Contact</h3>
       <p>

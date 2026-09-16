@@ -2,15 +2,18 @@ import type { Metadata } from 'next';
 import { ArrowRight, ButtonLink } from '@/components/ui/Button';
 import { PageHero } from '@/components/ui/PageHero';
 import { ValuesBento } from '@/components/about/ValuesBento';
+import { InstagramCommunity } from '@/components/about/InstagramCommunity';
 import { Reveal } from '@/components/ui/Reveal';
-import { asset, STUDIO } from '@/lib/config';
+import { InstagramIcon } from '@/components/ui/InstagramIcon';
+import { asset, INSTAGRAM_HANDLE, INSTAGRAM_URL, SOCIAL, STUDIO } from '@/lib/config';
 import { BOOKING_HREF } from '@/lib/nav';
 
 export const metadata: Metadata = {
   title: 'À propos',
   description:
     `${STUDIO.coach.firstName}, coach diplômé STAPS, a ouvert ${STUDIO.name} à ${STUDIO.address.city} ` +
-    'après plus de dix ans passés à enseigner le sport. Son histoire, sa méthode, ses valeurs.',
+    `après plus de dix ans passés à enseigner le sport, suivi par plus de ${SOCIAL.instagram.followersLabel} ` +
+    'personnes sur Instagram. Son histoire, sa méthode, ses valeurs.',
 };
 
 export default function AProposPage() {
@@ -22,7 +25,8 @@ export default function AProposPage() {
         intro={
           <>
             Derrière {STUDIO.name}, il y a une personne, pas une enseigne&nbsp;: {STUDIO.coach.firstName}, coach
-            diplômé STAPS, qui enseigne le sport depuis plus de {STUDIO.coach.years} ans.
+            diplômé STAPS, qui enseigne le sport depuis plus de {STUDIO.coach.years} ans, et que suivent
+            plus de {SOCIAL.instagram.followersLabel} personnes sur Instagram.
           </>
         }
         mascotte="mascotte-run-light.webp"
@@ -39,8 +43,23 @@ export default function AProposPage() {
                 height={1100}
                 className="aspect-[4/5] w-full rounded-[1.75rem] object-cover"
               />
-              <figcaption className="font-hand text-2xl text-anthracite/60">
-                {STUDIO.coach.fullName}, {STUDIO.coach.role.toLowerCase()}.
+              <figcaption className="flex flex-col gap-2">
+                <span className="font-hand text-2xl text-anthracite/60">
+                  {STUDIO.coach.fullName}, {STUDIO.coach.role.toLowerCase()}.
+                </span>
+                {/* Le pseudonyme fait partie de son identité professionnelle :
+                    il a sa place dans la présentation, pas seulement en pied
+                    de page. */}
+                <a
+                  href={INSTAGRAM_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[length:var(--text-sm)] text-anthracite/70 no-underline transition-colors hover:text-orange"
+                >
+                  <InstagramIcon />
+                  <span className="font-semibold">{INSTAGRAM_HANDLE}</span>
+                  <span className="text-anthracite/50">+{SOCIAL.instagram.followersLabel} abonnés</span>
+                </a>
               </figcaption>
             </figure>
           </Reveal>
@@ -106,6 +125,8 @@ export default function AProposPage() {
       </section>
 
       <ValuesBento />
+
+      <InstagramCommunity />
 
       <section className="u-section bg-orange text-creme">
         <div className="u-container flex flex-col items-center gap-6 text-center">

@@ -1,7 +1,8 @@
 import Link from 'next/link';
-import { asset, OPENING_HOURS, STUDIO } from '@/lib/config';
+import { asset, INSTAGRAM_HANDLE, INSTAGRAM_URL, OPENING_HOURS, SOCIAL, STUDIO } from '@/lib/config';
 import { BOOKING_HREF, LEGAL_NAV, MAIN_NAV } from '@/lib/nav';
 import { ArrowRight, ButtonLink } from '@/components/ui/Button';
+import { InstagramIcon } from '@/components/ui/InstagramIcon';
 
 export function Footer() {
   return (
@@ -101,18 +102,17 @@ export function Footer() {
               </a>
             </li>
             <li className="pt-1">
+              {/* Lien simple, pas de widget : aucune requête vers Instagram tant
+                  que le visiteur ne clique pas, donc aucun traceur tiers. */}
               <a
-                href={STUDIO.instagram}
+                href={INSTAGRAM_URL}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 text-creme/75 no-underline transition-colors hover:text-orange"
+                className="inline-flex flex-wrap items-center gap-x-2 gap-y-0.5 text-creme/75 no-underline transition-colors hover:text-orange"
               >
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="size-4">
-                  <rect x="3" y="3" width="18" height="18" rx="5" />
-                  <circle cx="12" cy="12" r="4" />
-                  <circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none" />
-                </svg>
-                Instagram
+                <InstagramIcon />
+                <span>{INSTAGRAM_HANDLE}</span>
+                <span className="text-creme/45">+{SOCIAL.instagram.followersLabel} abonnés</span>
               </a>
             </li>
           </ul>

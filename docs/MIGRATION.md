@@ -198,7 +198,64 @@ Un VPS OVH avec Node 22, PostgreSQL et un reverse-proxy :
 
 ---
 
-## 6. Avant la mise en ligne, dans tous les cas
+## 6. Brancher le vrai flux Instagram
+
+Le site affiche aujourd'hui le compte
+[@melvinmaillot](https://www.instagram.com/melvinmaillot/) sous forme de liens
+et d'une grille de publications choisies à la main
+(`src/lib/instagram.ts`). Aucun appel n'est fait vers Instagram : le visiteur
+ne communique avec ce réseau que s'il clique.
+
+### Pourquoi ce n'est pas branché en direct dès maintenant
+
+| Obstacle | Détail |
+|---|---|
+| L'API simple n'existe plus | L'*Instagram Basic Display API*, qui lisait un compte personnel avec un simple jeton, a été arrêtée par Meta le **4 décembre 2024**. |
+| La remplaçante est exigeante | L'*Instagram API with Instagram Login* (Graph API) impose un **compte professionnel** — créateur ou entreprise —, une application déclarée chez Meta, et un jeton à renouveler **tous les soixante jours**. |
+| Un site statique ne peut pas garder un secret | Tout ce que contient le site exporté est lisible par n'importe quel visiteur. Le jeton doit donc vivre côté serveur : celui de la section 3 fera l'affaire. |
+| Les images expirent | Les adresses renvoyées par l'API (`media_url`) cessent de fonctionner au bout de quelques jours. Il faut recopier les images chez soi à chaque rafraîchissement. |
+
+### La marche à suivre, le jour venu
+
+1. Basculer le compte en **compte professionnel** (Instagram → Paramètres →
+   Type de compte). C'est réversible et cela ne change rien pour les abonnés.
+2. Créer une application sur `developers.facebook.com`, produit
+   *Instagram*, et obtenir un jeton longue durée.
+3. Écrire une tâche planifiée quotidienne côté serveur qui appelle :
+
+   ```
+   GET https://graph.instagram.com/me/media
+       ?fields=id,caption,media_type,media_url,permalink,thumbnail_url,timestamp
+       &access_token=…
+   ```
+
+   télécharge chaque image, l'enregistre à côté des autres médias du site, puis
+   écrit un `public/data/instagram.json` ne contenant que des **chemins
+   locaux**.
+4. Remplacer le corps de `getInstagramPosts()` par la lecture de ce fichier.
+   **Aucun composant n'est à modifier** : ils ne connaissent que cette fonction.
+5. Facultatif : le nombre d'abonnés se lit sur le même jeton
+   (`GET https://graph.instagram.com/me?fields=followers_count`). La même tâche
+   peut l'écrire dans le JSON et `SOCIAL.instagram.live` passe alors à `true`.
+
+### La solution sans serveur, et pourquoi elle est écartée
+
+Des widgets tiers (LightWidget, Behold, Elfsight, SnapWidget…) font tout cela à
+notre place, sans ligne de code. Trois raisons de ne pas les retenir :
+
+- ils sont **payants** au-delà d'un petit quota, et l'abonnement s'ajoute aux
+  frais récurrents du client ;
+- ils **ralentissent** la page : un script tiers, une iframe et des images
+  servies depuis un autre domaine ;
+- ils **déposent des traceurs**. Il faudrait les soumettre au bandeau de
+  consentement, donc n'afficher la grille qu'après acceptation, et le site
+  perdrait son absence totale de cookies tiers — un argument qui tient
+  aujourd'hui, et qui est écrit noir sur blanc dans la politique de
+  confidentialité.
+
+---
+
+## 7. Avant la mise en ligne, dans tous les cas
 
 - [ ] Compléter les mentions légales (SIRET, TVA, hébergeur, carte
       professionnelle d'éducateur sportif, assurance RC pro) — voir
@@ -210,3 +267,6 @@ Un VPS OVH avec Node 22, PostgreSQL et un reverse-proxy :
 - [ ] Confirmer l'adresse, le téléphone et l'email réels (`src/lib/config.ts`).
 - [ ] Remplacer les visuels provisoires — voir [`MEDIA.md`](./MEDIA.md).
 - [ ] Vérifier le chemin de base (`NEXT_PUBLIC_BASE_PATH`) selon l'hébergement.
+- [ ] Remplacer les publications Instagram de démonstration, ou vider
+      `CURATED` dans `src/lib/instagram.ts` (voir la section 6).
+- [ ] Relire le nombre d'abonnés affiché (`SOCIAL.instagram.followersLabel`).
