@@ -187,6 +187,28 @@
     padding-inline: clamp(1.15rem, 0.7rem + 2.2vw, 3rem);
   }
 
+  /* Grossissement discret au survol d'une tuile.
+     Réservé aux pointeurs qui savent réellement survoler : sur un écran
+     tactile, `:hover` reste « collé » après un appui et laisserait une tuile
+     agrandie sans raison. Contrairement à ce qu'on pourrait croire, la
+     variante `hover:` de Tailwind v4 ne pose pas cette garde toute seule —
+     vérifié dans la feuille de style produite — d'où cette règle écrite à la
+     main.
+     Seule l'échelle est animée : ni la mise en page ni la peinture ne sont
+     refaites, le navigateur se contente de recomposer sur le GPU. */
+  .u-tile-zoom {
+    transition: scale 0.5s var(--ease-out-soft);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .u-tile-zoom:hover {
+      /* 1,5 % : perceptible, et inférieur à l'écart entre deux tuiles, donc
+         aucune ne vient mordre sur sa voisine. La tuile pleine largeur grandit
+         dans les marges du conteneur, jamais jusqu'au bord de l'écran. */
+      scale: 1.015;
+    }
+  }
+
   /* Section verticale à rythme fluide */
   .u-section {
     padding-block: var(--spacing-fluid-6);

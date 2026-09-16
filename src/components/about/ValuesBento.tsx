@@ -13,6 +13,9 @@ import { asset, STUDIO } from '@/lib/config';
  * Grille de 12 colonnes à partir du laptop, empilement simple en dessous.
  * Chaque tuile porte une couleur différente de la palette : la section est
  * lisible d'un coup d'œil sans qu'aucune valeur ne se ressemble.
+ *
+ * `u-tile-zoom` grossit la tuile survolée de 1,5 % (globals.css). L'effet est
+ * réservé aux pointeurs qui savent survoler, donc invisible au doigt.
  */
 export function ValuesBento() {
   return (
@@ -29,7 +32,7 @@ export function ValuesBento() {
         <ul className="mt-[var(--spacing-fluid-5)] grid gap-3 sm:gap-4 lg:grid-cols-12 lg:auto-rows-[minmax(10rem,auto)]">
           {/* 01 — Savoir-faire : grande tuile, la seule valeur qui se chiffre */}
           <Reveal as="li" className="lg:col-span-5 lg:row-span-2">
-            <article className="u-grain relative flex h-full flex-col justify-between overflow-hidden rounded-[1.75rem] bg-orange p-6 text-creme sm:p-8">
+            <article className="u-grain relative flex h-full flex-col justify-between overflow-hidden rounded-[1.75rem] bg-orange p-6 text-creme sm:p-8 u-tile-zoom">
               <img
                 src={asset('/brand/mascotte-lift-light.webp')}
                 alt=""
@@ -61,7 +64,7 @@ export function ValuesBento() {
 
           {/* 02 — Bienveillance : tuile claire, pour contraster */}
           <Reveal as="li" delay={90} className="lg:col-span-7">
-            <article className="flex h-full flex-col gap-3 rounded-[1.75rem] bg-creme p-6 text-anthracite sm:p-8">
+            <article className="flex h-full flex-col gap-3 rounded-[1.75rem] bg-creme p-6 text-anthracite sm:p-8 u-tile-zoom">
               <span className="text-[length:var(--text-2xs)] font-bold uppercase tracking-[0.2em] text-anthracite/40">02</span>
               <h3 className="text-[length:var(--text-4xl)]">Bienveillance</h3>
               <p className="max-w-[48ch] text-[length:var(--text-base)] leading-relaxed text-anthracite/75">
@@ -73,7 +76,7 @@ export function ValuesBento() {
 
           {/* 03 — Longévité */}
           <Reveal as="li" delay={150} className="lg:col-span-4">
-            <article className="flex h-full flex-col gap-3 rounded-[1.75rem] bg-jade p-6 text-creme sm:p-7">
+            <article className="flex h-full flex-col gap-3 rounded-[1.75rem] bg-jade p-6 text-creme sm:p-7 u-tile-zoom">
               <span className="text-[length:var(--text-2xs)] font-bold uppercase tracking-[0.2em] opacity-70">03</span>
               <h3 className="text-[length:var(--text-3xl)]">Longévité</h3>
               <p className="text-[length:var(--text-sm)] leading-relaxed opacity-90">
@@ -85,7 +88,7 @@ export function ValuesBento() {
 
           {/* 04 — Équilibre */}
           <Reveal as="li" delay={210} className="lg:col-span-3">
-            <article className="flex h-full flex-col gap-3 rounded-[1.75rem] bg-ciel p-6 text-anthracite sm:p-7">
+            <article className="flex h-full flex-col gap-3 rounded-[1.75rem] bg-ciel p-6 text-anthracite sm:p-7 u-tile-zoom">
               <span className="text-[length:var(--text-2xs)] font-bold uppercase tracking-[0.2em] text-anthracite/45">04</span>
               <h3 className="text-[length:var(--text-3xl)]">Équilibre</h3>
               <p className="text-[length:var(--text-sm)] leading-relaxed text-anthracite/80">
@@ -97,7 +100,7 @@ export function ValuesBento() {
 
           {/* 05 — Partage : bande pleine largeur, avec la signature de la marque */}
           <Reveal as="li" delay={270} className="lg:col-span-12">
-            <article className="u-grain relative flex flex-col items-start gap-5 overflow-hidden rounded-[1.75rem] bg-brun p-6 text-creme sm:p-8 lg:flex-row lg:items-center lg:justify-between lg:gap-10">
+            <article className="u-grain relative flex flex-col items-start gap-5 overflow-hidden rounded-[1.75rem] bg-brun p-6 text-creme sm:p-8 lg:flex-row lg:items-center lg:justify-between lg:gap-10 u-tile-zoom">
               <div className="relative flex flex-col gap-3">
                 <span className="text-[length:var(--text-2xs)] font-bold uppercase tracking-[0.2em] opacity-70">05</span>
                 <h3 className="text-[length:var(--text-4xl)]">Partage &amp; transmission</h3>
