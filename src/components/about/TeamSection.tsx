@@ -14,6 +14,12 @@ import { useBookableCoaches, useMounted } from '@/lib/hooks/useDatabase';
  * grande et à sa couleur. Les autres suivent, plus sobres — ils interviennent
  * quand il ne peut pas, la hiérarchie visuelle doit le dire sans phrase.
  *
+ * La section ne porte pas de couleur de fond propre : elle prolonge le crème
+ * du récit qui la précède, et se sépare par un simple filet. Un aplat blanc
+ * entre deux bandes crème creusait un trou au milieu de la page. Les fiches
+ * passent donc en carte blanche (`u-card`), qui est le contraste habituel du
+ * site sur fond crème.
+ *
  * ── La section disparaît quand il est seul ──────────────────────────────────
  * Une rubrique « l'équipe » avec une seule personne dessert le studio : elle
  * souligne qu'il n'y a personne d'autre. Tant que Melvin est le seul coach,
@@ -32,8 +38,13 @@ export function TeamSection() {
   const [lead, ...others] = coaches;
 
   return (
-    <section className="u-section bg-blanc">
-      <div className="u-container">
+    /* Pas de bande de couleur propre : l'équipe prolonge le récit de Melvin,
+       elle n'ouvre pas un chapitre séparé. Un aplat blanc entre deux sections
+       crème creusait un trou au milieu de la page. Le filet en tête du
+       conteneur suffit à marquer la césure, et la respiration est réduite en
+       haut pour que les deux blocs se lisent d'un seul tenant. */
+    <section className="bg-creme pb-[var(--spacing-fluid-6)] pt-[var(--spacing-fluid-4)]">
+      <div className="u-container border-t border-anthracite/10 pt-[var(--spacing-fluid-4)]">
         <SectionHeading
           eyebrow="L’équipe"
           title="Melvin, et ceux qui prennent le relais"
@@ -94,7 +105,7 @@ export function TeamSection() {
             <ul className="grid h-full gap-4">
               {others.map((coach, i) => (
                 <Reveal as="li" key={coach.id} delay={90 + i * 60} className="h-full">
-                  <article className="flex h-full flex-col gap-3 rounded-[1.75rem] border border-anthracite/10 bg-creme p-5 sm:p-6">
+                  <article className="u-card flex h-full flex-col gap-3 rounded-[1.75rem] p-5 sm:p-6">
                     <div className="flex items-center gap-4">
                       <CoachAvatar coach={coach} size="lg" />
                       <div className="flex min-w-0 flex-col gap-1">
