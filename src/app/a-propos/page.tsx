@@ -3,6 +3,7 @@ import { ArrowRight, ButtonLink } from '@/components/ui/Button';
 import { PageHero } from '@/components/ui/PageHero';
 import { ValuesBento } from '@/components/about/ValuesBento';
 import { InstagramCommunity } from '@/components/about/InstagramCommunity';
+import { TeamSection } from '@/components/about/TeamSection';
 import { Reveal } from '@/components/ui/Reveal';
 import { InstagramIcon } from '@/components/ui/InstagramIcon';
 import { asset, INSTAGRAM_HANDLE, INSTAGRAM_URL, SOCIAL, STUDIO } from '@/lib/config';
@@ -123,6 +124,8 @@ export default function AProposPage() {
           </div>
         </div>
       </section>
+
+      <TeamSection />
 
       <ValuesBento />
 

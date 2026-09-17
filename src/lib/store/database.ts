@@ -2,11 +2,14 @@
 
 import { OFFERS_BY_ID } from '@/data/offers';
 import { SCHEDULE, STUDIO } from '@/lib/config';
+import { ANY_COACH, coachById, coachName, type CoachChoice, ownerCoach, resolveCoachId } from '@/lib/coaches';
 import { addMinutesToTime, formatLongDate, formatTime, toDateTime } from '@/lib/date';
 import { formatPrice } from '@/lib/format';
 import type {
+  Assignment,
   Block,
   Booking,
+  Coach,
   EmailKind,
   EmailMessage,
   IsoDate,
@@ -15,7 +18,16 @@ import type {
   Time,
   User,
 } from '@/lib/types';
-import { DatabaseShape, DB_STORAGE_KEY, DB_VERSION, digestPassword, emptyDatabase, newId, newReference } from './schema';
+import {
+  DatabaseShape,
+  DB_STORAGE_KEY,
+  DB_VERSION,
+  digestPassword,
+  emptyDatabase,
+  newId,
+  newReference,
+  slugify,
+} from './schema';
 import { createSeedDatabase } from './seed';
 
 /**
@@ -36,6 +48,8 @@ import { createSeedDatabase } from './seed';
  *   cancelBooking              → POST /api/bookings/:id/cancel
  *   rescheduleBooking          → POST /api/bookings/:id/reschedule
  *   createBlock / deleteBlock  → POST|DELETE /api/blocks
+ *   addCoach / updateCoach     → POST|PATCH  /api/coaches
+ *   assignCoach / unassign     → POST|DELETE /api/assignments
  *   emails                     → file d'attente serveur (Brevo, Postmark, SES…)
  */
 class BougeDatabase {
@@ -78,6 +92,8 @@ class BougeDatabase {
       ...this.state,
       users: [...this.state.users],
       credentials: [...this.state.credentials],
+      coaches: [...this.state.coaches],
+      assignments: [...this.state.assignments],
       bookings: [...this.state.bookings],
       blocks: [...this.state.blocks],
       emails: [...this.state.emails],
@@ -229,6 +245,8 @@ class BougeDatabase {
     participants: number;
     date: IsoDate;
     startTime: Time;
+    /** Coach demandé, ou `ANY_COACH` si le client s'en remet au studio. */
+    coachChoice?: CoachChoice;
     paymentMethod: PaymentMethod;
     cardLast4?: string;
     guestNames?: string[];
@@ -245,6 +263,23 @@ class BougeDatabase {
     );
     if (taken) throw new Error('Ce créneau vient d’être réservé. Merci d’en choisir un autre.');
 
+    // Le coach est figé maintenant, pas recalculé à l'affichage : si le gérant
+    // change ses affectations demain, les séances déjà vendues gardent le
+    // coach annoncé au client.
+    const endTime = addMinutesToTime(input.startTime, offer.durationMin);
+    const scheduled = resolveCoachId(
+      input.date,
+      input.startTime,
+      endTime,
+      this.state.coaches,
+      this.state.assignments,
+    );
+    const wanted = input.coachChoice && input.coachChoice !== ANY_COACH ? input.coachChoice : undefined;
+    if (wanted && wanted !== scheduled) {
+      throw new Error('Ce créneau n’est plus assuré par le coach demandé. Merci d’en choisir un autre.');
+    }
+    const coachId = scheduled ?? ownerCoach(this.state.coaches)?.id ?? '';
+
     const amountCents = offer.pricePerPersonCents * (offer.id === 'petit-comite' ? input.participants : 1);
     const now = new Date().toISOString();
     const booking: Booking = {
@@ -252,10 +287,11 @@ class BougeDatabase {
       reference: newReference(),
       userId: input.userId,
       offerId: input.offerId,
+      coachId,
       participants: input.participants,
       date: input.date,
       startTime: input.startTime,
-      endTime: addMinutesToTime(input.startTime, offer.durationMin),
+      endTime,
       status: 'confirmed',
       payment: {
         method: input.paymentMethod,
@@ -315,6 +351,7 @@ class BougeDatabase {
       `  Formule     ${offer.name}\n` +
       `  Date        ${formatLongDate(booking.date)}\n` +
       `  Horaire     ${formatTime(booking.startTime)} — ${formatTime(booking.endTime)}\n` +
+      `  Coach       ${coachName(coachById(this.state.coaches, booking.coachId))}\n` +
       `  Participants ${booking.participants}\n` +
       `  Lieu        ${STUDIO.address.street}, ${STUDIO.address.postalCode} ${STUDIO.address.city}\n\n` +
       `${payment}\n\n` +
@@ -374,11 +411,17 @@ class BougeDatabase {
     if (taken) throw new Error('Ce créneau vient d’être réservé. Merci d’en choisir un autre.');
 
     const previous = `${formatLongDate(existing.date)} à ${formatTime(existing.startTime)}`;
+    const endTime = addMinutesToTime(startTime, offer.durationMin);
+    // Le créneau change, donc peut-être le coach : le nouvel horaire peut être
+    // affecté à quelqu'un d'autre. On le recalcule et l'email le dit.
+    const coachId =
+      resolveCoachId(date, startTime, endTime, this.state.coaches, this.state.assignments) ?? existing.coachId;
     const booking: Booking = {
       ...existing,
       date,
       startTime,
-      endTime: addMinutesToTime(startTime, offer.durationMin),
+      endTime,
+      coachId,
       updatedAt: new Date().toISOString(),
     };
     this.replaceBooking(booking);
@@ -394,7 +437,11 @@ class BougeDatabase {
           `Bonjour ${user.firstName},\n\n` +
           `Votre séance (référence ${booking.reference}) a été déplacée.\n\n` +
           `  Ancien créneau  ${previous}\n` +
-          `  Nouveau créneau ${formatLongDate(date)} à ${formatTime(startTime)}\n\n` +
+          `  Nouveau créneau ${formatLongDate(date)} à ${formatTime(startTime)}\n` +
+          (coachId !== existing.coachId
+            ? `  Coach           ${coachName(coachById(this.state.coaches, coachId))} vous accueillera\n`
+            : '') +
+          `\n` +
           `À très vite,\n${STUDIO.coach.firstName}`,
       });
     }
@@ -440,6 +487,158 @@ class BougeDatabase {
   async deleteBlock(blockId: string): Promise<void> {
     this.hydrate();
     this.state.blocks = this.state.blocks.filter((b) => b.id !== blockId);
+    this.commit();
+  }
+
+  /* --- L'équipe --------------------------------------------------------- */
+  /*
+   * Réservé au gérant. Le contrôle est ici purement côté client — suffisant
+   * pour la maquette, à remplacer impérativement par une vérification du rôle
+   * côté serveur à la migration : ces méthodes seront alors des routes
+   * protégées, et non des fonctions appelables depuis la console du
+   * navigateur.
+   */
+
+  /**
+   * Ajoute un coach et lui ouvre un accès à son back-office.
+   *
+   * Le mot de passe est provisoire : en production il faut envoyer un lien
+   * d'activation par email, jamais transmettre un mot de passe choisi par
+   * quelqu'un d'autre.
+   */
+  async addCoach(input: {
+    firstName: string;
+    lastName: string;
+    email: string;
+    password: string;
+    role: string;
+    bio?: string;
+    specialties?: string[];
+    color?: Coach['color'];
+    photo?: string;
+  }): Promise<Coach> {
+    this.hydrate();
+    const email = input.email.trim().toLowerCase();
+    if (this.state.credentials.some((c) => c.email === email)) {
+      throw new Error('Un compte existe déjà avec cette adresse email.');
+    }
+
+    const firstName = input.firstName.trim();
+    const lastName = input.lastName.trim();
+    if (!firstName || !lastName) throw new Error('Le prénom et le nom sont obligatoires.');
+
+    const now = new Date().toISOString();
+    const user: User = {
+      id: newId('usr'),
+      email,
+      firstName,
+      lastName,
+      role: 'coach',
+      marketingOptIn: false,
+      createdAt: now,
+    };
+
+    const coach: Coach = {
+      id: newId('cch'),
+      userId: user.id,
+      firstName,
+      lastName,
+      slug: slugify(`${firstName} ${lastName}`),
+      role: input.role.trim() || 'Coach sportif',
+      bio: input.bio?.trim() ?? '',
+      specialties: input.specialties?.filter(Boolean) ?? [],
+      // Sans photo fournie, le site affiche les initiales sur un aplat de
+      // couleur : voir le composant CoachAvatar.
+      photo: input.photo ?? '',
+      color: input.color ?? 'jade',
+      owner: false,
+      active: true,
+      createdAt: now,
+    };
+
+    this.state.users = [...this.state.users, user];
+    this.state.credentials = [
+      ...this.state.credentials,
+      { userId: user.id, email, passwordDigest: digestPassword(input.password) },
+    ];
+    this.state.coaches = [...this.state.coaches, coach];
+    this.commit();
+    return coach;
+  }
+
+  async updateCoach(
+    coachId: string,
+    patch: Partial<Pick<Coach, 'firstName' | 'lastName' | 'role' | 'bio' | 'specialties' | 'color' | 'photo' | 'active'>>,
+  ): Promise<void> {
+    this.hydrate();
+    this.state.coaches = this.state.coaches.map((c) => (c.id === coachId ? { ...c, ...patch } : c));
+
+    // Le nom affiché dans l'espace client vient du compte, pas de la fiche :
+    // les deux doivent rester d'accord.
+    const coach = this.state.coaches.find((c) => c.id === coachId);
+    if (coach && (patch.firstName || patch.lastName)) {
+      this.state.users = this.state.users.map((u) =>
+        u.id === coach.userId ? { ...u, firstName: coach.firstName, lastName: coach.lastName } : u,
+      );
+    }
+    this.commit();
+  }
+
+  /**
+   * Retire un coach de l'équipe.
+   *
+   * Ses séances passées ne sont jamais effacées : elles font l'historique et
+   * le chiffre d'affaires du studio. S'il lui reste des séances à venir, la
+   * suppression est refusée — elles doivent d'abord être reprises par
+   * quelqu'un ou annulées, sinon des clients se présenteraient devant une
+   * porte sans personne derrière.
+   */
+  async removeCoach(coachId: string): Promise<void> {
+    this.hydrate();
+    const coach = this.state.coaches.find((c) => c.id === coachId);
+    if (!coach) return;
+    if (coach.owner) throw new Error('Le gérant du studio ne peut pas être retiré de l’équipe.');
+
+    const today = new Date().toISOString().slice(0, 10);
+    const upcoming = this.state.bookings.filter(
+      (b) => b.coachId === coachId && b.status === 'confirmed' && b.date >= today,
+    );
+    if (upcoming.length > 0) {
+      throw new Error(
+        `${coach.firstName} a encore ${upcoming.length} séance${upcoming.length > 1 ? 's' : ''} à venir. ` +
+          'Réaffectez-les ou annulez-les avant de le retirer de l’équipe.',
+      );
+    }
+
+    this.state.coaches = this.state.coaches.filter((c) => c.id !== coachId);
+    // Les affectations et indisponibilités qui le désignaient n'ont plus
+    // d'objet : les créneaux concernés reviennent au titulaire.
+    this.state.assignments = this.state.assignments.filter((a) => a.coachId !== coachId);
+    this.state.blocks = this.state.blocks.filter((b) => b.coachId !== coachId);
+    // Son accès est fermé ; son profil disparaît. Les réservations passées
+    // conservent son identifiant, qui n'est plus résolu qu'en historique.
+    this.state.users = this.state.users.filter((u) => u.id !== coach.userId);
+    this.state.credentials = this.state.credentials.filter((c) => c.userId !== coach.userId);
+    if (this.state.session?.userId === coach.userId) this.state.session = null;
+    this.commit();
+  }
+
+  /* --- Affectations ------------------------------------------------------ */
+
+  async createAssignment(input: Omit<Assignment, 'id' | 'createdAt'>): Promise<Assignment> {
+    this.hydrate();
+    if (!this.state.coaches.some((c) => c.id === input.coachId)) {
+      throw new Error('Ce coach ne fait pas partie de l’équipe.');
+    }
+    const assignment: Assignment = { ...input, id: newId('asg'), createdAt: new Date().toISOString() };
+    this.state.assignments = [...this.state.assignments, assignment];
+    this.commit();
+    return assignment;
+  }
+
+  async deleteAssignment(assignmentId: string): Promise<void> {
+    this.hydrate();
+    this.state.assignments = this.state.assignments.filter((a) => a.id !== assignmentId);
     this.commit();
   }
 

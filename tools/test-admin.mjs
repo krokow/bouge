@@ -27,8 +27,8 @@ await page.waitForTimeout(900);
 console.log('  ✓ Connexion gérant et redirection vers /admin/');
 
 const sections = width < 1280
-  ? ['Accueil', 'Agenda', 'RDV', 'Blocages', 'Stats', 'Emails']
-  : ['Vue d’ensemble', 'Calendrier', 'Réservations', 'Indisponibilités', 'Statistiques', 'Emails envoyés'];
+  ? ['Accueil', 'Agenda', 'RDV', 'Blocages', 'Coachs', 'Équipe', 'Stats', 'Emails']
+  : ['Vue d’ensemble', 'Calendrier', 'Réservations', 'Indisponibilités', 'Qui assure quoi', 'L’équipe', 'Statistiques', 'Emails envoyés'];
 
 for (const name of sections) {
   await page.getByRole('button', { name, exact: true }).click();

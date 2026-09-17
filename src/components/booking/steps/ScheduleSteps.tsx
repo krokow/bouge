@@ -3,8 +3,9 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { Calendar } from '../Calendar';
 import { computeDaySlots, type AvailabilityInput } from '@/lib/availability';
+import { ANY_COACH, coachById } from '@/lib/coaches';
 import { formatDayMonth, formatLongDate, formatTime, timeToMinutes } from '@/lib/date';
-import type { IsoDate, Time } from '@/lib/types';
+import type { Coach, IsoDate, Slot, Time } from '@/lib/types';
 
 /**
  * Choix de la date ET du créneau, sur un seul écran.
@@ -16,6 +17,12 @@ import type { IsoDate, Time } from '@/lib/types';
  *
  * Sur téléphone, les deux blocs s'empilent et la liste des créneaux est
  * amenée à l'écran automatiquement dès qu'une date est choisie.
+ *
+ * Le coach demandé à l'étape précédente filtre cette liste. Les créneaux
+ * qu'assure quelqu'un d'autre ne sont pas grisés mais retirés — un bouton
+ * barré n'apprend rien d'utile. Une ligne les annonce en toutes lettres, avec
+ * la manière de les récupérer : c'est ce qui évite qu'une journée paraisse
+ * fermée alors qu'elle est simplement tenue par un autre coach.
  */
 
 /** Regroupe les créneaux par moment de la journée : plus lisible qu'une liste de 14 boutons. */
@@ -33,6 +40,8 @@ export function ScheduleStep({
   onTimeChange,
   availability,
   maxDate,
+  coaches = [],
+  onCoachChoiceChange,
 }: {
   date: IsoDate | null;
   time: Time | null;
@@ -40,11 +49,28 @@ export function ScheduleStep({
   onTimeChange: (time: Time) => void;
   availability: AvailabilityInput;
   maxDate: IsoDate;
+  /** L'équipe, pour nommer le coach de chaque créneau. */
+  coaches?: Coach[];
+  /** Permet de revenir à « peu importe » sans remonter d'une étape. */
+  onCoachChoiceChange?: (choice: typeof ANY_COACH) => void;
 }) {
   const slotsRef = useRef<HTMLDivElement>(null);
   const previousDate = useRef<IsoDate | null>(date);
 
-  const slots = useMemo(() => (date ? computeDaySlots(date, availability) : []), [date, availability]);
+  const wanted = availability.coachChoice;
+  const filtering = Boolean(wanted) && wanted !== ANY_COACH;
+
+  const allSlots = useMemo(() => (date ? computeDaySlots(date, availability) : []), [date, availability]);
+
+  /** Le créneau est-il proposé compte tenu du coach demandé ? */
+  const offered = (slot: Slot) => !filtering || slot.coachId === wanted;
+
+  const slots = allSlots.filter(offered);
+
+  // Créneaux libres ce jour-là, mais tenus par quelqu'un d'autre.
+  const heldByOthers = filtering
+    ? allSlots.filter((slot) => slot.state === 'available' && !offered(slot))
+    : [];
 
   const groups = PERIODS.map((period) => ({
     ...period,
@@ -55,6 +81,12 @@ export function ScheduleStep({
   })).filter((group) => group.slots.some((slot) => slot.state === 'available'));
 
   const available = slots.filter((slot) => slot.state === 'available').length;
+
+  // Le nom du coach n'est utile sur les boutons que si le client n'en a pas
+  // demandé un en particulier, et si l'équipe compte plus d'une personne.
+  const showCoachOnSlots = !filtering && coaches.length > 1;
+  const selectedSlot = time ? slots.find((s) => s.startTime === time) : undefined;
+  const selectedCoach = coachById(coaches, selectedSlot?.coachId);
 
   // Sur petit écran, la liste des créneaux est sous le calendrier : on l'amène
   // à l'écran quand l'utilisateur change de date, sinon rien ne semble se passer.
@@ -101,8 +133,29 @@ export function ScheduleStep({
 
             {groups.length === 0 && (
               <p className="rounded-xl bg-orange/10 px-4 py-3 text-[length:var(--text-sm)]">
-                Plus rien de libre le {formatDayMonth(date)}. Choisissez une autre date dans le calendrier — les
-                jours à pastille verte sont les plus ouverts.
+                Plus rien de libre le {formatDayMonth(date)}
+                {filtering ? ' avec ce coach' : ''}. Choisissez une autre date dans le calendrier — les jours à
+                pastille verte sont les plus ouverts.
+              </p>
+            )}
+
+            {heldByOthers.length > 0 && (
+              <p className="flex flex-wrap items-baseline gap-x-2 gap-y-1 rounded-xl bg-anthracite/5 px-4 py-3 text-[length:var(--text-sm)] leading-relaxed text-anthracite/70">
+                <span>
+                  {heldByOthers.length === 1
+                    ? 'Un autre créneau est libre ce jour-là'
+                    : `${heldByOthers.length} autres créneaux sont libres ce jour-là`}
+                  , assurés par quelqu’un d’autre de l’équipe.
+                </span>
+                {onCoachChoiceChange && (
+                  <button
+                    type="button"
+                    onClick={() => onCoachChoiceChange(ANY_COACH)}
+                    className="font-semibold text-orange-dark underline underline-offset-2 hover:text-orange"
+                  >
+                    Les afficher
+                  </button>
+                )}
               </p>
             )}
 
@@ -138,7 +191,18 @@ export function ScheduleStep({
                                 : 'border-anthracite/15 bg-blanc text-anthracite hover:-translate-y-0.5 hover:border-orange hover:bg-orange/10',
                           ].join(' ')}
                         >
-                          {formatTime(slot.startTime)}
+                          <span className="flex flex-col items-center leading-none">
+                            {formatTime(slot.startTime)}
+                            {showCoachOnSlots && slot.coachId && (
+                              <span
+                                className={`mt-1 text-[0.62rem] font-medium uppercase tracking-[0.08em] ${
+                                  selected ? 'text-creme/75' : 'text-anthracite/45'
+                                }`}
+                              >
+                                {coachById(coaches, slot.coachId)?.firstName}
+                              </span>
+                            )}
+                          </span>
                         </button>
                       </li>
                     );
@@ -149,8 +213,13 @@ export function ScheduleStep({
 
             {time && (
               <p className="rounded-xl bg-jade/12 px-4 py-3 text-[length:var(--text-sm)] leading-relaxed">
-                Séance retenue&nbsp;: <strong>{formatLongDate(date)} à {formatTime(time)}</strong>. Le créneau n’est
-                bloqué qu’une fois la réservation confirmée.
+                Séance retenue&nbsp;: <strong>{formatLongDate(date)} à {formatTime(time)}</strong>
+                {selectedCoach ? (
+                  <>
+                    , avec <strong>{selectedCoach.firstName} {selectedCoach.lastName}</strong>
+                  </>
+                ) : null}
+                . Le créneau n’est bloqué qu’une fois la réservation confirmée.
               </p>
             )}
           </>

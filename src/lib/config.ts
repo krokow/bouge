@@ -128,6 +128,66 @@ export const ADMIN_ACCOUNT = {
   password: 'bouge2026',
 } as const;
 
+/**
+ * L'équipe de départ du studio.
+ *
+ * Melvin est le titulaire : il assure tous les créneaux qui ne sont pas
+ * affectés à quelqu'un d'autre, et il est seul à pouvoir gérer l'équipe.
+ *
+ * ⚠️ CONTENU DE DÉMONSTRATION — les deux autres coachs sont inventés, comme
+ * les témoignages. Noms, présentations, spécialités et photos sont à remplacer
+ * par de vraies personnes avant la mise en ligne, ou à supprimer depuis
+ * l'espace gérant si Melvin travaille seul : la section « L'équipe » de la page
+ * À propos disparaît alors d'elle-même. Voir docs/CONTENU.md.
+ */
+export const TEAM_SEED = [
+  {
+    slug: 'melvin-maillot',
+    firstName: 'Melvin',
+    lastName: 'Maillot',
+    role: 'Coach diplômé STAPS — fondateur',
+    bio:
+      'Dix ans à enseigner le sport avant d’ouvrir son studio. Il commence toujours par regarder ' +
+      'comment vous bougez, puis construit à partir de là.',
+    specialties: ['Renforcement', 'Mobilité', 'Reprise du sport'],
+    photo: '/media/coach-melvin.webp',
+    color: 'orange',
+    owner: true,
+    email: ADMIN_ACCOUNT.email,
+    password: ADMIN_ACCOUNT.password,
+  },
+  {
+    slug: 'sarah-lemoine',
+    firstName: 'Sarah',
+    lastName: 'Lemoine',
+    role: 'Coach diplômée STAPS',
+    bio:
+      'Ancienne nageuse, elle travaille le souffle et le gainage avant la charge. Les séances ' +
+      'du mardi et du jeudi lui reviennent souvent.',
+    specialties: ['Cardio', 'Gainage', 'Natation'],
+    photo: '/media/coach-sarah.webp',
+    color: 'jade',
+    owner: false,
+    email: 'sarah@bouge-studio.fr',
+    password: 'bouge2026',
+  },
+  {
+    slug: 'karim-benali',
+    firstName: 'Karim',
+    lastName: 'Benali',
+    role: 'Préparateur physique',
+    bio:
+      'Il vient du rugby et de la préparation physique en club. À l’aise avec les objectifs ' +
+      'chiffrés : une course, une échéance, un retour de blessure.',
+    specialties: ['Force', 'Préparation physique', 'Post-blessure'],
+    photo: '/media/coach-karim.webp',
+    color: 'ciel',
+    owner: false,
+    email: 'karim@bouge-studio.fr',
+    password: 'bouge2026',
+  },
+] as const;
+
 /** Nombre maximum de participants par séance, toutes offres confondues. */
 export const MAX_PARTICIPANTS = 3;
 

@@ -1,4 +1,4 @@
-import type { Block, Booking, Credential, EmailMessage, Session, User } from '@/lib/types';
+import type { Assignment, Block, Booking, Coach, Credential, EmailMessage, Session, User } from '@/lib/types';
 
 /**
  * Forme complète de la « base » de démonstration.
@@ -12,20 +12,26 @@ export interface DatabaseShape {
   version: number;
   users: User[];
   credentials: Credential[];
+  /** L'équipe du studio. Le titulaire y figure toujours. */
+  coaches: Coach[];
+  /** Qui assure quelle plage. Le reste revient au titulaire. */
+  assignments: Assignment[];
   bookings: Booking[];
   blocks: Block[];
   emails: EmailMessage[];
   session: Session | null;
 }
 
-export const DB_VERSION = 4;
-export const DB_STORAGE_KEY = 'bouge.db.v4';
+export const DB_VERSION = 5;
+export const DB_STORAGE_KEY = 'bouge.db.v5';
 
 export function emptyDatabase(): DatabaseShape {
   return {
     version: DB_VERSION,
     users: [],
     credentials: [],
+    coaches: [],
+    assignments: [],
     bookings: [],
     blocks: [],
     emails: [],
@@ -44,6 +50,19 @@ export function newId(prefix: string): string {
       ? crypto.randomUUID().slice(0, 8)
       : Math.random().toString(36).slice(2, 10);
   return `${prefix}_${rand}`;
+}
+
+/**
+ * Identifiant lisible tiré d'un nom : « Karim Benali » → « karim-benali ».
+ * Sert d'adresse stable pour un coach, indépendante de son identifiant opaque.
+ */
+export function slugify(value: string): string {
+  return value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '');
 }
 
 /** Référence lisible transmise au client : « BG-7K2M ». */
@@ -80,4 +99,4 @@ export function digestPassword(password: string): string {
   return `demo$${hash.toString(36)}$${password.length}`;
 }
 
-export type { Block, Booking, Credential, EmailMessage, Session, User };
+export type { Assignment, Block, Booking, Coach, Credential, EmailMessage, Session, User };

@@ -26,6 +26,8 @@ Voici ce qui doit être relu ou corrigé, par ordre d'importance.
 | **Coordonnées du marqueur sur la carte** | **Pointent sur le quartier, pas sur le numéro** | `src/lib/config.ts` → `STUDIO.coordinates` |
 | Témoignages clients | Trois avis inventés | `src/components/home/Testimonials.tsx` |
 | Nombre d'abonnés Instagram | `60 K`, saisi à la main et affiché avec un « + » | `src/lib/config.ts` → `SOCIAL.instagram` |
+| Les deux autres coachs | Sarah Lemoine et Karim Benali, entièrement inventés | `src/lib/config.ts` → `TEAM_SEED` |
+| Portraits des coachs | Aplats de marque avec initiales, générés par `tools/build-media.py` | `public/media/coach-*.webp` |
 | Publications Instagram affichées | Quatre visuels du studio et des légendes écrites pour la maquette | `src/lib/instagram.ts` |
 | Ouverture du cabinet d'ostéopathie | « l'an prochain » | `src/components/home/OsteoTeaser.tsx` |
 
@@ -38,6 +40,13 @@ Voici ce qui doit être relu ou corrigé, par ordre d'importance.
 > légendes écrites pour la maquette. Les remplacer par de vraies publications,
 > ou vider le tableau `CURATED` de `src/lib/instagram.ts` — la section se
 > réaffiche alors sans la grille, sans rien casser.
+>
+> ⚠️ **Sarah Lemoine** et **Karim Benali** sont des personnes inventées, au
+> même titre que les témoignages. Avant la mise en ligne, deux possibilités :
+> les remplacer par de vrais coachs depuis l'espace gérant (section
+> « L'équipe »), ou les retirer — si Melvin reste seul, la section « L'équipe »
+> de la page À propos disparaît d'elle-même et l'étape « Votre coach » du
+> tunnel n'affiche plus que lui.
 >
 > Le **nombre d'abonnés** est écrit en dur. Il est affiché arrondi et précédé
 > d'un « + » pour rester vrai tant que le compte grossit, mais il mérite d'être

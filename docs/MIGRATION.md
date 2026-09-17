@@ -62,7 +62,7 @@ CREATE TABLE users (
   first_name    text NOT NULL,
   last_name     text NOT NULL,
   phone         text,
-  role          text NOT NULL DEFAULT 'client' CHECK (role IN ('client','admin')),
+  role          text NOT NULL DEFAULT 'client' CHECK (role IN ('client','coach','admin')),
   marketing_opt_in boolean NOT NULL DEFAULT false,
   created_at    timestamptz NOT NULL DEFAULT now()
 );
@@ -72,10 +72,47 @@ CREATE TABLE credentials (
   password_hash   text NOT NULL   -- Argon2id, calculé côté serveur uniquement
 );
 
+CREATE TABLE coaches (
+  id           uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id      uuid NOT NULL UNIQUE REFERENCES users(id) ON DELETE RESTRICT,
+  first_name   text NOT NULL,
+  last_name    text NOT NULL,
+  slug         text UNIQUE NOT NULL,
+  role         text NOT NULL,
+  bio          text NOT NULL DEFAULT '',
+  specialties  text[] NOT NULL DEFAULT '{}',
+  photo        text NOT NULL DEFAULT '',
+  color        text NOT NULL,
+  owner        boolean NOT NULL DEFAULT false,
+  active       boolean NOT NULL DEFAULT true,
+  created_at   timestamptz NOT NULL DEFAULT now()
+);
+
+-- Le studio a un seul titulaire : c'est lui qui assure tout ce qui n'est
+-- confié à personne. Cet index l'impose au niveau de la base.
+CREATE UNIQUE INDEX coaches_single_owner ON coaches (owner) WHERE owner;
+
+-- « Sur cette plage, c'est untel qui coache. »
+CREATE TABLE assignments (
+  id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  coach_id    uuid NOT NULL REFERENCES coaches(id) ON DELETE CASCADE,
+  type        text NOT NULL CHECK (type IN ('day','week','range','slot')),
+  start_date  date NOT NULL,
+  end_date    date NOT NULL,
+  start_time  time,
+  end_time    time,
+  note        text,
+  created_at  timestamptz NOT NULL DEFAULT now(),
+  CHECK (end_date >= start_date)
+);
+
 CREATE TABLE bookings (
   id             uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   reference      text UNIQUE NOT NULL,
   user_id        uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  -- RESTRICT et non CASCADE : supprimer un coach ne doit jamais effacer
+  -- l'historique du studio ni son chiffre d'affaires.
+  coach_id       uuid NOT NULL REFERENCES coaches(id) ON DELETE RESTRICT,
   offer_id       text NOT NULL,
   participants   smallint NOT NULL CHECK (participants BETWEEN 1 AND 3),
   date           date NOT NULL,
@@ -95,14 +132,19 @@ CREATE TABLE bookings (
   cancelled_by   text
 );
 
--- Le studio n'a qu'un coach : un seul rendez-vous actif par créneau.
--- Cette contrainte est la véritable protection contre la double réservation.
+-- Le studio n'a qu'une salle : un seul rendez-vous actif par créneau, quel
+-- que soit le coach. Cette contrainte est la véritable protection contre la
+-- double réservation — noter l'absence de coach_id dans l'index, c'est
+-- délibéré. Le jour où le studio disposerait de deux espaces, il faudrait
+-- l'ajouter ici ET réécrire src/lib/coaches.ts.
 CREATE UNIQUE INDEX bookings_one_per_slot
   ON bookings (date, start_time)
   WHERE status <> 'cancelled';
 
 CREATE TABLE blocks (
   id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  -- NULL : le studio entier est fermé. Renseigné : ce coach seul est absent.
+  coach_id    uuid REFERENCES coaches(id) ON DELETE CASCADE,
   type        text NOT NULL CHECK (type IN ('day','week','range','slot')),
   start_date  date NOT NULL,
   end_date    date NOT NULL,

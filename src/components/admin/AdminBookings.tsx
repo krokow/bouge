@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/Button';
 import { Price } from '@/components/ui/Price';
 import { OFFERS, OFFERS_BY_ID } from '@/data/offers';
 import { formatLongDate, formatShortDate, formatTime, toDateTime, todayIso } from '@/lib/date';
-import { useDatabase } from '@/lib/hooks/useDatabase';
+import { useAdminData } from './AdminScope';
 import { bookingsToIcs, downloadIcs } from '@/lib/ics';
 import { db } from '@/lib/store/database';
 import type { Booking, BookingStatus } from '@/lib/types';
@@ -34,7 +34,7 @@ const STATUS_STYLES: Record<BookingStatus, { label: string; className: string }>
  * vérifier un rendez-vous depuis le sien.
  */
 export function AdminBookings() {
-  const state = useDatabase();
+  const state = useAdminData();
   const [period, setPeriod] = useState<Period>('upcoming');
   const [offerFilter, setOfferFilter] = useState<string>('all');
   const [search, setSearch] = useState('');

@@ -1,7 +1,19 @@
 import { OFFERS } from '@/data/offers';
-import { ADMIN_ACCOUNT, SCHEDULE } from '@/lib/config';
+import { ADMIN_ACCOUNT, SCHEDULE, TEAM_SEED } from '@/lib/config';
 import { addDays, addMinutesToTime, minutesToTime, timeToMinutes, todayIso, toDateTime, weekdayOf } from '@/lib/date';
-import type { Block, Booking, Credential, EmailMessage, IsoDate, Offer, Time, User } from '@/lib/types';
+import { resolveCoachId } from '@/lib/coaches';
+import type {
+  Assignment,
+  Block,
+  Booking,
+  Coach,
+  Credential,
+  EmailMessage,
+  IsoDate,
+  Offer,
+  Time,
+  User,
+} from '@/lib/types';
 import { type DatabaseShape, DB_VERSION, digestPassword } from './schema';
 
 /**
@@ -123,6 +135,89 @@ export function createSeedDatabase(today: IsoDate = todayIso()): DatabaseShape {
 
   const clients = users.filter((u) => u.role === 'client');
 
+  /* --- L'équipe ---------------------------------------------------------- */
+  // Melvin réutilise le compte gérant déjà créé ; les autres coachs reçoivent
+  // le leur, avec le rôle `coach` : ils accèdent à leur back-office et à lui
+  // seul. Voir TEAM_SEED dans src/lib/config.ts.
+  const coaches: Coach[] = TEAM_SEED.map((c, i) => {
+    let userId: string;
+    if (c.owner) {
+      userId = admin.id;
+    } else {
+      userId = `usr_coach_${c.slug}`;
+      users.push({
+        id: userId,
+        email: c.email,
+        firstName: c.firstName,
+        lastName: c.lastName,
+        role: 'coach',
+        marketingOptIn: false,
+        createdAt: new Date(Date.now() - (40 - i * 12) * 86_400_000).toISOString(),
+      });
+      credentials.push({ userId, email: c.email, passwordDigest: digestPassword(c.password) });
+    }
+
+    return {
+      id: `cch_${c.slug}`,
+      userId,
+      firstName: c.firstName,
+      lastName: c.lastName,
+      slug: c.slug,
+      role: c.role,
+      bio: c.bio,
+      specialties: [...c.specialties],
+      photo: c.photo,
+      color: c.color,
+      owner: c.owner,
+      active: true,
+      // L'ordre d'arrivée dans l'équipe décide de l'ordre d'affichage.
+      createdAt: new Date(Date.now() - (400 - i * 120) * 86_400_000).toISOString(),
+    };
+  });
+
+  const owner = coaches.find((c) => c.owner)!;
+  const sarah = coaches.find((c) => c.slug === 'sarah-lemoine');
+  const karim = coaches.find((c) => c.slug === 'karim-benali');
+
+  /* --- Affectations ------------------------------------------------------ */
+  // Ce que le gérant a décidé : hors de ces plages, c'est lui qui assure.
+  const assignments: Assignment[] = [];
+  if (sarah) {
+    assignments.push({
+      id: 'asg_seed_1',
+      coachId: sarah.id,
+      type: 'range',
+      startDate: addDays(today, 1),
+      endDate: addDays(today, 12),
+      note: 'Sarah prend les après-midis pendant ma formation',
+      createdAt: now,
+    });
+  }
+  if (karim) {
+    assignments.push({
+      id: 'asg_seed_2',
+      coachId: karim.id,
+      type: 'day',
+      startDate: addDays(today, 5),
+      endDate: addDays(today, 5),
+      note: 'Journée préparation physique',
+      createdAt: now,
+    });
+    // Affectation sur un créneau précis : elle l'emporte sur la période de
+    // Sarah ci-dessus. C'est la règle de précision, illustrée dans les données.
+    assignments.push({
+      id: 'asg_seed_3',
+      coachId: karim.id,
+      type: 'slot',
+      startDate: addDays(today, 8),
+      endDate: addDays(today, 8),
+      startTime: '18:00',
+      endTime: '20:00',
+      note: 'Suivi retour de blessure',
+      createdAt: now,
+    });
+  }
+
   /* --- Indisponibilités ------------------------------------------------- */
   const blocks: Block[] = [
     {
@@ -153,9 +248,26 @@ export function createSeedDatabase(today: IsoDate = todayIso()): DatabaseShape {
     },
   ];
 
+  // Indisponibilité qui ne concerne qu'un coach : seuls les créneaux qu'il
+  // devait assurer disparaissent, le reste du planning ne bouge pas.
+  if (sarah) {
+    blocks.push({
+      id: 'blk_seed_4',
+      coachId: sarah.id,
+      type: 'day',
+      startDate: addDays(today, 6),
+      endDate: addDays(today, 6),
+      reason: 'Sarah — indisponible',
+      createdAt: now,
+    });
+  }
+
+  // Jours où le studio entier est fermé : aucune séance n'y est générée.
+  // Les indisponibilités propres à un coach n'entrent pas ici — le studio
+  // reste ouvert avec quelqu'un d'autre.
   const blockedDates = new Set<IsoDate>();
   blocks.forEach((b) => {
-    if (b.type === 'slot') return;
+    if (b.coachId || b.type === 'slot') return;
     let d = b.startDate;
     while (d <= b.endDate) {
       blockedDates.add(d);
@@ -203,6 +315,9 @@ export function createSeedDatabase(today: IsoDate = todayIso()): DatabaseShape {
         reference: `BG-${String(1000 + refCounter).slice(-4)}`,
         userId: client.id,
         offerId: offer.id,
+        // Le coach du jour, d'après les affectations en vigueur.
+        coachId:
+          resolveCoachId(date, time, addMinutesToTime(time, offer.durationMin), coaches, assignments) ?? owner.id,
         participants,
         date,
         startTime: time,
@@ -238,6 +353,8 @@ export function createSeedDatabase(today: IsoDate = todayIso()): DatabaseShape {
     version: DB_VERSION,
     users,
     credentials,
+    coaches,
+    assignments,
     bookings,
     blocks,
     emails,

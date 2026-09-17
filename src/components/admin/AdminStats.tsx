@@ -6,7 +6,7 @@ import { Price } from '@/components/ui/Price';
 import type { AvailabilityInput } from '@/lib/availability';
 import { addDays, todayIso } from '@/lib/date';
 import { formatPercent, formatPrice, formatPriceCompact } from '@/lib/format';
-import { useDatabase } from '@/lib/hooks/useDatabase';
+import { useAdminScope } from './AdminScope';
 import {
   byWeekday,
   dailySeries,
@@ -23,8 +23,8 @@ const RANGES = [
   { id: 180, label: '6 mois' },
 ] as const;
 
-export function AdminStats({ availability }: { availability: AvailabilityInput }) {
-  const state = useDatabase();
+export function AdminStats() {
+  const { data: state, availability } = useAdminScope();
   const [days, setDays] = useState<number>(30);
   const today = todayIso();
   const from = addDays(today, -(days - 1));

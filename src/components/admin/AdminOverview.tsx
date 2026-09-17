@@ -8,18 +8,16 @@ import { OFFERS_BY_ID } from '@/data/offers';
 import { COLOR_CLASSES } from '@/lib/colors';
 import { addDays, formatRelativeDay, formatTime, startOfWeek, todayIso } from '@/lib/date';
 import { formatPrice } from '@/lib/format';
-import { useDatabase } from '@/lib/hooks/useDatabase';
+import { useAdminScope } from './AdminScope';
 import { bookingsOfDay, summarize, upcomingBookings } from '@/lib/stats';
 import type { Booking, User } from '@/lib/types';
 
 export function AdminOverview({ onNavigate }: { onNavigate: (section: AdminSection) => void }) {
-  const state = useDatabase();
+  // Les chiffres portent sur le périmètre consulté, mais le calcul des
+  // créneaux ouvrables reste celui du studio : c'est ce qui donne un taux de
+  // remplissage comparable d'un coach à l'autre.
+  const { data: state, availability } = useAdminScope();
   const today = todayIso();
-
-  const availability = useMemo(
-    () => ({ bookings: state.bookings, blocks: state.blocks }),
-    [state.bookings, state.blocks],
-  );
 
   const week = useMemo(() => {
     const start = startOfWeek(today);

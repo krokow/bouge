@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/Button';
 import { FormError, TextField } from '@/components/ui/Field';
 import { openingTimes } from '@/lib/availability';
 import { addDays, formatLongDate, formatShortDate, formatTime, startOfWeek, todayIso } from '@/lib/date';
-import { useDatabase } from '@/lib/hooks/useDatabase';
+import { useAdminScope } from './AdminScope';
 import { db } from '@/lib/store/database';
 import type { Block, BlockType, IsoDate } from '@/lib/types';
 
@@ -33,7 +33,7 @@ const TYPE_LABELS: Record<BlockType, string> = {
 };
 
 export function AdminBlocks() {
-  const state = useDatabase();
+  const { data: state, coach } = useAdminScope();
   const today = todayIso();
 
   const [type, setType] = useState<BlockType>('day');
@@ -82,12 +82,16 @@ export function AdminBlocks() {
     }
 
     await db.createBlock({
+      // Dans l'espace d'un coach, l'indisponibilité ne vaut que pour lui : les
+      // créneaux qu'il aurait assurés disparaissent, le reste du planning ne
+      // bouge pas. Dans la vue « tout le studio », elle ferme pour tout le monde.
+      coachId: coach?.id,
       type,
       startDate: from,
       endDate: to,
       startTime: type === 'slot' ? startTime : undefined,
       endTime: type === 'slot' ? endTime : undefined,
-      reason: reason.trim() || 'Indisponible',
+      reason: reason.trim() || (coach ? `${coach.firstName} — indisponible` : 'Indisponible'),
     });
 
     setReason('');
@@ -97,6 +101,11 @@ export function AdminBlocks() {
     <div className="grid items-start gap-5 xl:grid-cols-[22rem_1fr]">
       <form onSubmit={submit} className="u-card flex flex-col gap-4 p-5 sm:p-6">
         <h2 className="text-[length:var(--text-2xl)]">Bloquer une disponibilité</h2>
+        <p className="text-[length:var(--text-xs)] leading-relaxed text-anthracite/60">
+          {coach
+            ? `Cette indisponibilité ne concerne que ${coach.firstName}. Les créneaux assurés par quelqu’un d’autre restent ouverts.`
+            : 'Le studio sera fermé pour tout le monde sur la plage choisie.'}
+        </p>
 
         {error && <FormError>{error}</FormError>}
 

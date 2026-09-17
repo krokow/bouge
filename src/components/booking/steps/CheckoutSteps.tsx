@@ -8,7 +8,7 @@ import { Price } from '@/components/ui/Price';
 import { OFFERS_BY_ID } from '@/data/offers';
 import { asset, SCHEDULE, STUDIO } from '@/lib/config';
 import { formatLongDate, formatTime } from '@/lib/date';
-import { useAction } from '@/lib/hooks/useDatabase';
+import { useAction, useCoach } from '@/lib/hooks/useDatabase';
 import { db } from '@/lib/store/database';
 import type { Booking, PaymentMethod, User } from '@/lib/types';
 import { bookingToClientIcs, downloadIcs } from '@/lib/ics';
@@ -508,6 +508,7 @@ export function PaymentStep({
 
 export function ConfirmationStep({ booking, user }: { booking: Booking; user: User }) {
   const offer = OFFERS_BY_ID[booking.offerId];
+  const bookingCoach = useCoach(booking.coachId);
 
   return (
     <div className="flex flex-col gap-6">
@@ -538,6 +539,13 @@ export function ConfirmationStep({ booking, user }: { booking: Booking; user: Us
 
       <dl className="grid gap-px overflow-hidden rounded-[1.5rem] border-2 border-anthracite/12 bg-anthracite/12 sm:grid-cols-2">
         <Detail label="Formule">{offer.name}</Detail>
+        {/* Le client doit savoir qui l'accueille : c'est la première question
+            qu'il se posera en arrivant devant la porte. */}
+        {bookingCoach && (
+          <Detail label="Votre coach">
+            {bookingCoach.firstName} {bookingCoach.lastName}
+          </Detail>
+        )}
         <Detail label="Participants">{booking.participants}</Detail>
         <Detail label="Date">{formatLongDate(booking.date)}</Detail>
         <Detail label="Horaire">

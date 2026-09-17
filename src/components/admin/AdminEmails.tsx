@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useDatabase } from '@/lib/hooks/useDatabase';
+import { useAdminData } from './AdminScope';
 import type { EmailKind } from '@/lib/types';
 
 /**
@@ -21,7 +21,7 @@ const KIND_LABELS: Record<EmailKind, { label: string; className: string }> = {
 };
 
 export function AdminEmails() {
-  const state = useDatabase();
+  const state = useAdminData();
   const [openId, setOpenId] = useState<string | null>(null);
 
   return (

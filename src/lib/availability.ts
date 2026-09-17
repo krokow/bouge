@@ -1,6 +1,7 @@
 import { SCHEDULE } from './config';
 import { addDays, addMinutesToTime, minutesToTime, timeToMinutes, toDateTime, todayIso, weekdayOf } from './date';
-import type { Block, Booking, IsoDate, Slot, SlotState, Time } from './types';
+import { ANY_COACH, blockAppliesToSlot, type CoachChoice, resolveCoachId } from './coaches';
+import type { Assignment, Block, Booking, Coach, IsoDate, Slot, SlotState, Time } from './types';
 
 /**
  * Calcul des disponibilités.
@@ -9,8 +10,14 @@ import type { Block, Booking, IsoDate, Slot, SlotState, Time } from './types';
  * telles quelles côté serveur lors de la migration — ce qui garantit que le
  * client et le backend appliqueront exactement les mêmes règles de planning.
  *
- * Règle de fond : le studio n'a qu'un coach. Un créneau occupé l'est pour tout
- * le monde, quel que soit le nombre de participants de la séance qui l'occupe.
+ * Règle de fond : le studio n'a qu'une salle. Un créneau occupé l'est pour tout
+ * le monde, quel que soit le nombre de participants de la séance qui l'occupe,
+ * et quel que soit le coach qui l'assure.
+ *
+ * Plusieurs coachs peuvent intervenir, mais ils se partagent ce planning unique
+ * plutôt que d'en avoir chacun un : voir src/lib/coaches.ts. Demander un coach
+ * précis à la réservation ne fait donc pas apparaître de créneaux, cela masque
+ * ceux qu'assure quelqu'un d'autre.
  */
 
 /** Créneaux théoriques d'une journée d'après les horaires d'ouverture. */
@@ -38,26 +45,35 @@ function overlaps(aStart: Time, aEnd: Time, bStart: Time, bEnd: Time): boolean {
   return timeToMinutes(aStart) < timeToMinutes(bEnd) && timeToMinutes(bStart) < timeToMinutes(aEnd);
 }
 
-/** Le blocage couvre-t-il ce créneau précis ? */
-function blockCovers(block: Block, date: IsoDate, start: Time, end: Time): boolean {
-  if (date < block.startDate || date > block.endDate) return false;
-  if (block.type !== 'slot') return true; // jour / semaine / période : journée entière
-  if (!block.startTime || !block.endTime) return true;
-  return overlaps(start, end, block.startTime, block.endTime);
-}
-
 export interface AvailabilityInput {
   bookings: Booking[];
   blocks: Block[];
+  /** L'équipe du studio. Vide en l'absence de données : tout reste ouvert. */
+  coaches?: Coach[];
+  /** Qui assure quoi. Ce qui n'est pas affecté revient au titulaire. */
+  assignments?: Assignment[];
+  /**
+   * Ne garder que les créneaux assurés par ce coach.
+   * `ANY_COACH` ou absent : tous les créneaux, quel que soit l'intervenant.
+   */
+  coachChoice?: CoachChoice;
   /** Injectable pour les tests ; par défaut, l'instant présent. */
   now?: Date;
   /** Réservation en cours de report : son propre créneau reste sélectionnable. */
   ignoreBookingId?: string;
 }
 
-/** État détaillé de tous les créneaux d'une journée. */
+/**
+ * État détaillé de tous les créneaux d'une journée.
+ *
+ * Le filtre par coach n'est PAS appliqué ici : la fonction décrit le planning
+ * du studio tel qu'il est, coach compris pour chaque créneau. C'est
+ * `availableTimes` qui restreint ensuite à un intervenant. L'espace gérant a
+ * ainsi une vue complète, et le tunnel de réservation une vue filtrée, à
+ * partir du même calcul.
+ */
 export function computeDaySlots(date: IsoDate, input: AvailabilityInput): Slot[] {
-  const { bookings, blocks, now = new Date(), ignoreBookingId } = input;
+  const { bookings, blocks, coaches = [], assignments = [], now = new Date(), ignoreBookingId } = input;
   const times = openingTimes(date);
   if (times.length === 0 || SCHEDULE.closedDates.includes(date)) return [];
 
@@ -72,7 +88,13 @@ export function computeDaySlots(date: IsoDate, input: AvailabilityInput): Slot[]
     let blockId: string | undefined;
 
     const booking = dayBookings.find((b) => overlaps(startTime, endTime, b.startTime, b.endTime));
-    const block = dayBlocks.find((b) => blockCovers(b, date, startTime, endTime));
+
+    // Le coach du créneau : celui de la séance déjà réservée, sinon celui que
+    // désignent les affectations. Une séance passée garde son coach même si
+    // l'affectation a changé depuis.
+    const coachId = booking?.coachId ?? resolveCoachId(date, startTime, endTime, coaches, assignments);
+
+    const block = dayBlocks.find((b) => blockAppliesToSlot(b, date, startTime, endTime, coachId));
 
     if (toDateTime(date, startTime).getTime() < earliest) {
       state = 'past';
@@ -85,15 +107,21 @@ export function computeDaySlots(date: IsoDate, input: AvailabilityInput): Slot[]
     if (booking) bookingId = booking.id;
     if (block) blockId = block.id;
 
-    return { date, startTime, endTime, state, bookingId, blockId };
+    return { date, startTime, endTime, state, bookingId, blockId, coachId };
   });
 }
 
 /** Créneaux réservables par un client pour cette journée. */
+export function availableSlots(date: IsoDate, input: AvailabilityInput): Slot[] {
+  const wanted = input.coachChoice;
+  return computeDaySlots(date, input).filter(
+    (s) => s.state === 'available' && (!wanted || wanted === ANY_COACH || s.coachId === wanted),
+  );
+}
+
+/** Heures de début réservables, pour les appels qui n'ont besoin que de ça. */
 export function availableTimes(date: IsoDate, input: AvailabilityInput): Time[] {
-  return computeDaySlots(date, input)
-    .filter((s) => s.state === 'available')
-    .map((s) => s.startTime);
+  return availableSlots(date, input).map((s) => s.startTime);
 }
 
 export function hasAvailability(date: IsoDate, input: AvailabilityInput): boolean {

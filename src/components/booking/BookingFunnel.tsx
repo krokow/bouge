@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { Stepper, type StepDefinition } from './Stepper';
 import { BookingSummary, BookingSummaryBar, totalCents } from './BookingSummary';
 import { OfferStep, ParticipantsStep, offersFor } from './steps/ChoiceSteps';
+import { CoachStep } from './steps/CoachStep';
 import { ScheduleStep } from './steps/ScheduleSteps';
 import {
   AuthStep,
@@ -16,19 +17,34 @@ import {
 } from './steps/CheckoutSteps';
 import { ArrowRight, Button } from '@/components/ui/Button';
 import { FormError } from '@/components/ui/Field';
-import { bookingHorizonEnd, firstAvailableDate } from '@/lib/availability';
-import { useAction, useCurrentUser, useDatabase, useMounted } from '@/lib/hooks/useDatabase';
+import { availableTimes, bookingHorizonEnd, firstAvailableDate } from '@/lib/availability';
+import { ANY_COACH, type CoachChoice } from '@/lib/coaches';
+import { addDays, todayIso } from '@/lib/date';
+import { SCHEDULE } from '@/lib/config';
+import { useAction, useBookableCoaches, useCurrentUser, useDatabase, useMounted } from '@/lib/hooks/useDatabase';
 import { db } from '@/lib/store/database';
 import type { Booking, IsoDate, OfferId, PaymentMethod, Time } from '@/lib/types';
 
 const STEPS: StepDefinition[] = [
   { id: 'participants', label: 'Participants', shortLabel: 'Qui' },
   { id: 'offer', label: 'Formule', shortLabel: 'Formule' },
+  { id: 'coach', label: 'Votre coach', shortLabel: 'Coach' },
   { id: 'schedule', label: 'Date et créneau', shortLabel: 'Créneau' },
   { id: 'auth', label: 'Vos informations', shortLabel: 'Infos' },
   { id: 'payment', label: 'Paiement', shortLabel: 'Paiement' },
   { id: 'confirmation', label: 'Confirmation', shortLabel: 'Terminé' },
 ];
+
+/** Index des étapes, pour ne pas semer des nombres nus dans le composant. */
+const STEP = {
+  participants: 0,
+  offer: 1,
+  coach: 2,
+  schedule: 3,
+  auth: 4,
+  payment: 5,
+  confirmation: 6,
+} as const;
 
 /** Dernière étape avant la confirmation (le bouton y devient « Payer »). */
 const LAST_INPUT_STEP = STEPS.length - 2;
@@ -36,6 +52,7 @@ const LAST_INPUT_STEP = STEPS.length - 2;
 const STEP_TITLES = [
   { title: 'Vous venez à combien ?', intro: 'Trois personnes maximum par séance — jamais plus.' },
   { title: 'Quelle formule ?', intro: 'Seules les formules compatibles avec votre groupe sont affichées.' },
+  { title: 'Avec qui ?', intro: 'Choisissez votre coach, ou laissez le studio décider selon le créneau.' },
   { title: 'Quand venez-vous ?', intro: 'Cliquez sur un jour : ses créneaux réellement libres s’affichent aussitôt.' },
   { title: 'Qui êtes-vous ?', intro: 'Un compte permet de reporter ou annuler votre séance en autonomie.' },
   { title: 'Comment réglez-vous ?', intro: 'Sur place le jour J, ou en ligne maintenant. Au choix.' },
@@ -47,11 +64,15 @@ export function BookingFunnel() {
   const state = useDatabase();
   const user = useCurrentUser();
   const mounted = useMounted();
+  const coaches = useBookableCoaches();
 
   const [step, setStep] = useState(0);
   const [furthest, setFurthest] = useState(0);
   const [participants, setParticipants] = useState(1);
   const [offerId, setOfferId] = useState<OfferId | null>(null);
+  // « Peu importe » par défaut : c'est le choix qui laisse le plus de
+  // créneaux ouverts, et celui que le studio a intérêt à voir retenu.
+  const [coachChoice, setCoachChoice] = useState<CoachChoice>(ANY_COACH);
   const [date, setDate] = useState<IsoDate | null>(null);
   const [startTime, setStartTime] = useState<Time | null>(null);
   const [guestNames, setGuestNames] = useState<string[]>([]);
@@ -66,9 +87,34 @@ export function BookingFunnel() {
   // Nouvelle identité seulement quand les données changent réellement :
   // évite de recalculer les créneaux à chaque rendu.
   const availability = useMemo(
-    () => ({ bookings: state.bookings, blocks: state.blocks }),
-    [state.bookings, state.blocks],
+    () => ({
+      bookings: state.bookings,
+      blocks: state.blocks,
+      coaches: state.coaches,
+      assignments: state.assignments,
+      coachChoice,
+    }),
+    [state.bookings, state.blocks, state.coaches, state.assignments, coachChoice],
   );
+
+  /**
+   * Créneaux libres sur tout l'horizon pour un choix de coach donné.
+   *
+   * Affiché sur chaque carte à l'étape « Votre coach » : le client voit
+   * immédiatement ce que lui coûte une préférence, plutôt que de la découvrir
+   * devant un calendrier vide à l'étape suivante.
+   */
+  const countFor = useMemo(() => {
+    const base = { bookings: state.bookings, blocks: state.blocks, coaches: state.coaches, assignments: state.assignments };
+    const from = todayIso();
+    return (choice: CoachChoice) => {
+      let total = 0;
+      for (let i = 0; i <= SCHEDULE.bookingHorizonDays; i += 1) {
+        total += availableTimes(addDays(from, i), { ...base, coachChoice: choice }).length;
+      }
+      return total;
+    };
+  }, [state.bookings, state.blocks, state.coaches, state.assignments]);
   const maxDate = useMemo(() => bookingHorizonEnd(), []);
 
   const { run: submit, pending, error } = useAction(db.createBooking.bind(db));
@@ -86,10 +132,11 @@ export function BookingFunnel() {
       prefillApplied.current = true;
       setParticipants(matching);
       setOfferId(requested);
-      // On ouvre directement le calendrier : les deux premières étapes restent
-      // accessibles d'un clic dans le fil d'étapes si l'on veut les changer.
-      setStep(2);
-      setFurthest(2);
+      // On ouvre directement le choix du coach : les deux premières étapes
+      // restent accessibles d'un clic dans le fil d'étapes si l'on veut les
+      // changer.
+      setStep(STEP.coach);
+      setFurthest(STEP.coach);
     } else {
       prefillApplied.current = true;
     }
@@ -109,27 +156,41 @@ export function BookingFunnel() {
     setStartTime(null);
   }, [date]);
 
+  // Changer de coach aussi : le créneau retenu peut ne plus être assuré par la
+  // personne demandée. On repart de la première date réellement disponible
+  // pour ce coach, plutôt que de laisser une date vide à l'écran.
+  const previousChoice = useRef(coachChoice);
+  useEffect(() => {
+    if (previousChoice.current === coachChoice) return;
+    previousChoice.current = coachChoice;
+    setStartTime(null);
+    setDate(firstAvailableDate(availability));
+  }, [coachChoice, availability]);
+
   // À l'arrivée sur l'étape du planning, le calendrier s'ouvre sur la prochaine
   // date réellement disponible : une décision de moins à prendre, et des
   // créneaux visibles immédiatement. Placé ici plutôt que dans le bouton
   // « Continuer » pour couvrir aussi l'arrivée directe par un lien
   // « /reserver/?offre=… », qui saute les deux premières étapes.
   useEffect(() => {
-    if (step !== 2 || date) return;
+    if (step !== STEP.schedule || date) return;
     setDate(firstAvailableDate(availability));
   }, [step, date, availability]);
 
   const canContinue = (() => {
     switch (step) {
-      case 0:
+      case STEP.participants:
         return participants >= 1;
-      case 1:
+      case STEP.offer:
         return offerId !== null;
-      case 2:
+      case STEP.coach:
+        // « Peu importe » est une réponse valable : il y a toujours un choix.
+        return true;
+      case STEP.schedule:
         return date !== null && startTime !== null;
-      case 3:
+      case STEP.auth:
         return user !== null;
-      case 4:
+      case STEP.payment:
         return paymentMethod === 'onsite' || (paymentMethod === 'online' && isCardComplete(card));
       default:
         return false;
@@ -155,6 +216,7 @@ export function BookingFunnel() {
       participants,
       date,
       startTime,
+      coachChoice,
       paymentMethod,
       cardLast4: paymentMethod === 'online' ? card.number.replace(/\s/g, '').slice(-4) : undefined,
       guestNames: guestNames.filter(Boolean),
@@ -166,7 +228,7 @@ export function BookingFunnel() {
     }
   };
 
-  const summary = { participants, offerId, date, startTime };
+  const summary = { participants, offerId, date, startTime, coachChoice, coaches };
 
   // Le rendu statique ne connaît pas encore la session : on attend l'hydratation
   // pour éviter toute divergence entre le HTML généré et le DOM.
@@ -194,9 +256,12 @@ export function BookingFunnel() {
           {error && <FormError>{error}</FormError>}
 
           <div key={step} style={{ animation: 'u-fade-up 0.45s cubic-bezier(0.22,1,0.36,1) both' }}>
-            {step === 0 && <ParticipantsStep value={participants} onChange={setParticipants} />}
-            {step === 1 && <OfferStep participants={participants} value={offerId} onChange={setOfferId} />}
-            {step === 2 && (
+            {step === STEP.participants && <ParticipantsStep value={participants} onChange={setParticipants} />}
+            {step === STEP.offer && <OfferStep participants={participants} value={offerId} onChange={setOfferId} />}
+            {step === STEP.coach && (
+              <CoachStep coaches={coaches} value={coachChoice} onChange={setCoachChoice} countFor={countFor} />
+            )}
+            {step === STEP.schedule && (
               <ScheduleStep
                 date={date}
                 time={startTime}
@@ -204,9 +269,11 @@ export function BookingFunnel() {
                 onTimeChange={setStartTime}
                 availability={availability}
                 maxDate={maxDate}
+                coaches={coaches}
+                onCoachChoiceChange={setCoachChoice}
               />
             )}
-            {step === 3 && (
+            {step === STEP.auth && (
               <AuthStep
                 user={user}
                 participants={participants}
@@ -216,7 +283,7 @@ export function BookingFunnel() {
                 onNotesChange={setNotes}
               />
             )}
-            {step === 4 && (
+            {step === STEP.payment && (
               <PaymentStep
                 method={paymentMethod}
                 onMethodChange={setPaymentMethod}
@@ -225,7 +292,7 @@ export function BookingFunnel() {
                 amountCents={totalCents(summary)}
               />
             )}
-            {step === 5 && booking && user && <ConfirmationStep booking={booking} user={user} />}
+            {step === STEP.confirmation && booking && user && <ConfirmationStep booking={booking} user={user} />}
           </div>
 
           {/* Navigation — masquée sur l'écran de confirmation */}

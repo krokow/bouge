@@ -6,13 +6,18 @@ import { Price } from '@/components/ui/Price';
 import { asset, MAX_PARTICIPANTS } from '@/lib/config';
 import { formatLongDate, formatTime } from '@/lib/date';
 import { pluralize } from '@/lib/format';
-import type { OfferId, IsoDate, Time } from '@/lib/types';
+import { ANY_COACH, coachById, type CoachChoice } from '@/lib/coaches';
+import type { Coach, OfferId, IsoDate, Time } from '@/lib/types';
 
 export interface SummaryData {
   participants: number;
   offerId: OfferId | null;
   date: IsoDate | null;
   startTime: Time | null;
+  /** Coach demandé, ou `ANY_COACH`. Absent tant que l'étape n'existe pas. */
+  coachChoice?: CoachChoice;
+  /** L'équipe, pour nommer le coach demandé. */
+  coaches?: Coach[];
 }
 
 /** Montant total : seul le petit comité se facture par personne. */
@@ -39,6 +44,17 @@ function Rows({ data }: { data: SummaryData }) {
         )}
       </Row>
       <Row label="Formule">{offer ? offer.name : <Pending />}</Row>
+      {/* La ligne n'apparaît que si le studio a plus d'un coach : inutile de
+          faire mine de proposer un choix quand il n'y en a pas. */}
+      {(data.coaches?.length ?? 0) > 1 && (
+        <Row label="Coach">
+          {data.coachChoice && data.coachChoice !== ANY_COACH ? (
+            coachById(data.coaches ?? [], data.coachChoice)?.firstName ?? <Pending />
+          ) : (
+            <span className="text-anthracite/60">Peu importe</span>
+          )}
+        </Row>
+      )}
       <Row label="Date">{data.date ? formatLongDate(data.date) : <Pending />}</Row>
       <Row label="Horaire">
         {data.startTime && offer ? (

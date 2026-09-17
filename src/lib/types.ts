@@ -87,7 +87,12 @@ export interface ScheduleConfig {
 /* Comptes                                                                     */
 /* -------------------------------------------------------------------------- */
 
-export type UserRole = 'client' | 'admin';
+/**
+ * `admin` est le gérant : Melvin. Il voit et gère tout le studio.
+ * `coach` est un intervenant : il ne voit que sa propre activité.
+ * `client` réserve des séances.
+ */
+export type UserRole = 'client' | 'coach' | 'admin';
 
 export interface User {
   id: string;
@@ -122,6 +127,78 @@ export interface Session {
 }
 
 /* -------------------------------------------------------------------------- */
+/* Étendue d'une plage : partagée par les affectations et les indisponibilités */
+/* -------------------------------------------------------------------------- */
+
+export type BlockType = 'day' | 'week' | 'range' | 'slot';
+
+/* -------------------------------------------------------------------------- */
+/* Coachs                                                                      */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Un intervenant du studio.
+ *
+ * Le studio n'a qu'une salle : deux séances ne peuvent pas avoir lieu en même
+ * temps. Un coach ne possède donc pas son propre planning — il y a un seul
+ * planning, celui du studio, et une affectation (`Assignment`) désigne qui
+ * l'assure sur telle plage. Par défaut, c'est le titulaire.
+ */
+export interface Coach {
+  id: string;
+  /** Compte de connexion associé, pour l'accès au back-office. */
+  userId: string;
+  firstName: string;
+  lastName: string;
+  /** Identifiant lisible utilisé dans les adresses (« melvin-maillot »). */
+  slug: string;
+  /** Intitulé affiché sous le nom (« Coach diplômé STAPS »). */
+  role: string;
+  /** Présentation courte, affichée sur le site et dans le tunnel. */
+  bio: string;
+  /** Deux ou trois spécialités, affichées en étiquettes. */
+  specialties: string[];
+  /** Chemin de la photo de profil, relatif à la racine publique. */
+  photo: string;
+  /** Couleur de marque associée, pour le repérer d'un coup d'œil. */
+  color: BrandColor;
+  /**
+   * Le titulaire du studio. Il assure tous les créneaux qui ne sont pas
+   * affectés à quelqu'un d'autre, et il est seul à pouvoir gérer l'équipe.
+   * Un seul coach porte ce drapeau.
+   */
+  owner: boolean;
+  /** Un coach désactivé n'est plus proposé à la réservation, mais son
+   *  historique et ses séances à venir sont conservés. */
+  active: boolean;
+  createdAt: Timestamp;
+}
+
+/**
+ * « Sur cette plage, c'est untel qui coache. »
+ *
+ * Même vocabulaire que les indisponibilités (`Block`) : un jour, une semaine,
+ * une période ou un créneau précis. Ce qui n'est couvert par aucune
+ * affectation revient au titulaire.
+ *
+ * En cas de chevauchement, la règle est écrite dans `resolveCoachId`
+ * (src/lib/coaches.ts) : la plus précise gagne, puis la plus récente.
+ */
+export interface Assignment {
+  id: string;
+  coachId: string;
+  type: BlockType;
+  startDate: IsoDate;
+  endDate: IsoDate;
+  /** Renseignés uniquement pour `type: 'slot'`. */
+  startTime?: Time;
+  endTime?: Time;
+  /** Mot du gérant, visible de lui seul (« remplacement congés »). */
+  note?: string;
+  createdAt: Timestamp;
+}
+
+/* -------------------------------------------------------------------------- */
 /* Réservations                                                                */
 /* -------------------------------------------------------------------------- */
 
@@ -150,6 +227,8 @@ export interface Booking {
   reference: string;
   userId: string;
   offerId: OfferId;
+  /** Coach qui assure la séance, figé à la réservation. */
+  coachId: string;
   participants: number;
   date: IsoDate;
   startTime: Time;
@@ -170,10 +249,14 @@ export interface Booking {
 /* Indisponibilités du coach                                                   */
 /* -------------------------------------------------------------------------- */
 
-export type BlockType = 'day' | 'week' | 'range' | 'slot';
-
 export interface Block {
   id: string;
+  /**
+   * Absent : le studio entier est fermé, personne ne peut réserver.
+   * Renseigné : seul ce coach est indisponible. Les créneaux qu'il aurait
+   * assurés disparaissent ; les autres ne bougent pas.
+   */
+  coachId?: string;
   type: BlockType;
   /** Premier jour bloqué (inclus). */
   startDate: IsoDate;
@@ -225,4 +308,6 @@ export interface Slot {
   bookingId?: string;
   /** Blocage rendant le créneau indisponible, le cas échéant. */
   blockId?: string;
+  /** Coach qui assure ce créneau, d'après les affectations en vigueur. */
+  coachId?: string;
 }

@@ -36,39 +36,61 @@ await step('Étape 2 — choix d’une formule', async () => {
   await page.locator('button[aria-pressed]').filter({ hasText: 'Petit comité' }).first().click();
   await page.getByRole('button', { name: /^Continuer/ }).click();
 });
-await step('Étape 3 — date pré-sélectionnée, créneaux affichés sans validation', async () => {
+await step('Étape 3 — choix du coach : « Peu importe » par défaut', async () => {
+  await page.waitForSelector('text=Avec qui ?');
+  const any = page.locator('button[aria-pressed]').filter({ hasText: 'Peu importe' }).first();
+  if ((await any.getAttribute('aria-pressed')) !== 'true') throw new Error('« Peu importe » n’est pas pré-sélectionné');
+  // Chaque carte annonce le nombre de créneaux libres : l'option la plus large
+  // doit forcément en offrir au moins autant qu'un coach en particulier.
+  const counts = await page.locator('button[aria-pressed] >> text=/créneaux? libres?|aucun créneau/').allTextContents();
+  console.log(`      décomptes affichés : ${counts.length}`);
+});
+await step('Étape 3 — filtrer sur un coach réduit bien l’offre', async () => {
+  const cards = page.locator('button[aria-pressed]');
+  const total = await cards.count();
+  if (total < 2) throw new Error('aucun coach proposé');
+  // Le second bouton est le titulaire (le premier étant « Peu importe »).
+  await cards.nth(1).click();
+  await page.waitForTimeout(250);
+  if ((await cards.nth(1).getAttribute('aria-pressed')) !== 'true') throw new Error('le coach n’est pas retenu');
+  // Puis on revient à « Peu importe » pour la suite du parcours.
+  await cards.nth(0).click();
+  await page.waitForTimeout(250);
+  await page.getByRole('button', { name: /^Continuer/ }).click();
+});
+await step('Étape 4 — date pré-sélectionnée, créneaux affichés sans validation', async () => {
   await page.waitForSelector('[role="grid"]');
   const selected = await page.locator('[role="gridcell"][aria-selected="true"]').count();
   if (selected !== 1) throw new Error(`${selected} date(s) sélectionnée(s)`);
   // Les créneaux doivent être visibles immédiatement, sur le même écran.
-  const slots = await page.locator('button[aria-pressed]:not([disabled])').filter({ hasText: /^\d+h\d+$/ }).count();
+  const slots = await page.locator('button[aria-pressed]:not([disabled])').filter({ hasText: /^\d+h\d+/ }).count();
   if (slots === 0) throw new Error('aucun créneau affiché sur l’écran de la date');
   console.log(`      ${slots} créneaux visibles sans changer d’étape`);
 });
-await step('Étape 3 — changement de date : les créneaux se rafraîchissent', async () => {
+await step('Étape 4 — changement de date : les créneaux se rafraîchissent', async () => {
   const other = page.locator('[role="gridcell"]:not([disabled])[aria-selected="false"]').first();
   await other.click();
   await page.waitForTimeout(350);
-  const slots = await page.locator('button[aria-pressed]:not([disabled])').filter({ hasText: /^\d+h\d+$/ }).count();
+  const slots = await page.locator('button[aria-pressed]:not([disabled])').filter({ hasText: /^\d+h\d+/ }).count();
   if (slots === 0) throw new Error('aucun créneau après changement de date');
 });
-await step('Étape 3 — choix d’un créneau', async () => {
-  await page.locator('button[aria-pressed]:not([disabled])').filter({ hasText: /^\d+h\d+$/ }).first().click();
+await step('Étape 4 — choix d’un créneau', async () => {
+  await page.locator('button[aria-pressed]:not([disabled])').filter({ hasText: /^\d+h\d+/ }).first().click();
   await page.getByRole('button', { name: /^Continuer/ }).click();
 });
-await step('Étape 4 — connexion au compte de test', async () => {
+await step('Étape 5 — connexion au compte de test', async () => {
   await page.getByRole('button', { name: 'J’ai déjà un compte' }).click();
   await page.locator('#si-email').fill('camille.ferrand@example.com');
   await page.locator('#si-password').fill('demo1234');
   await page.getByRole('button', { name: 'Se connecter' }).click();
   await page.waitForSelector('text=Quelques précisions', { timeout: 5000 });
 });
-await step('Étape 4 — nom de l’accompagnant', async () => {
+await step('Étape 5 — nom de l’accompagnant', async () => {
   await page.locator('#guest-0').fill('Julie');
   await page.locator('#booking-notes').fill('Épaule gauche sensible.');
   await page.getByRole('button', { name: /^Continuer/ }).click();
 });
-await step('Étape 5 — paiement en ligne + carte', async () => {
+await step('Étape 6 — paiement en ligne + carte', async () => {
   await page.getByRole('button', { name: /Payer en ligne/ }).click();
   await page.locator('#card-number').fill('4242424242424242');
   await page.locator('#card-expiry').fill('1229');
@@ -78,7 +100,7 @@ await step('Étape 5 — paiement en ligne + carte', async () => {
   if (await cta.isDisabled()) throw new Error('le bouton de paiement reste désactivé');
   await cta.click();
 });
-await step('Étape 6 — confirmation avec référence', async () => {
+await step('Étape 7 — confirmation avec référence', async () => {
   await page.waitForSelector('text=C’est réservé.', { timeout: 6000 });
   const ref = await page.locator('text=/^BG-[A-Z0-9]{4}$/').first().textContent();
   console.log(`      référence obtenue : ${ref}`);

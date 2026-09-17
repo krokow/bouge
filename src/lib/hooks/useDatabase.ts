@@ -1,9 +1,10 @@
 'use client';
 
-import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
+import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import { db } from '@/lib/store/database';
 import type { DatabaseShape } from '@/lib/store/schema';
-import type { User } from '@/lib/types';
+import { bookableCoaches, coachById } from '@/lib/coaches';
+import type { Coach, User } from '@/lib/types';
 
 /**
  * Accès réactif à la base de démonstration.
@@ -28,6 +29,34 @@ export function useCurrentUser(): User | null {
 
 export function useIsAdmin(): boolean {
   return useCurrentUser()?.role === 'admin';
+}
+
+/** L'équipe au complet, coachs désactivés compris. */
+export function useCoaches(): Coach[] {
+  return useDatabase().coaches;
+}
+
+/** Coachs proposables à la réservation, titulaire en tête. */
+export function useBookableCoaches(): Coach[] {
+  const coaches = useCoaches();
+  return useMemo(() => bookableCoaches(coaches), [coaches]);
+}
+
+/**
+ * Fiche du coach correspondant au compte connecté.
+ *
+ * Le gérant en a une (il coache aussi) ; un client n'en a pas.
+ */
+export function useCurrentCoach(): Coach | null {
+  const user = useCurrentUser();
+  const coaches = useCoaches();
+  if (!user) return null;
+  return coaches.find((c) => c.userId === user.id) ?? null;
+}
+
+/** Retrouve un coach par son identifiant, sans recharger toute la liste. */
+export function useCoach(coachId: string | undefined): Coach | undefined {
+  return coachById(useCoaches(), coachId);
 }
 
 /**

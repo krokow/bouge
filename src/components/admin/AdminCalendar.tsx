@@ -15,7 +15,7 @@ import {
   todayIso,
   WEEKDAY_SHORT,
 } from '@/lib/date';
-import { useDatabase } from '@/lib/hooks/useDatabase';
+import { useAdminData, useAdminScope } from './AdminScope';
 import { db } from '@/lib/store/database';
 import type { IsoDate, Slot, Time } from '@/lib/types';
 
@@ -30,8 +30,8 @@ import type { IsoDate, Slot, Time } from '@/lib/types';
  * Un clic sur un créneau libre le bloque ; un clic sur un créneau bloqué le
  * libère. Les créneaux réservés ouvrent le détail de la réservation.
  */
-export function AdminCalendar({ availability }: { availability: AvailabilityInput }) {
-  const state = useDatabase();
+export function AdminCalendar() {
+  const { data: state, full, availability, coach, canSeeBooking } = useAdminScope();
   const [weekStart, setWeekStart] = useState<IsoDate>(startOfWeek(todayIso()));
   const [selectedDay, setSelectedDay] = useState<IsoDate>(todayIso());
   const [detail, setDetail] = useState<Slot | null>(null);
@@ -53,9 +53,27 @@ export function AdminCalendar({ availability }: { availability: AvailabilityInpu
 
   const usersById = useMemo(() => new Map(state.users.map((u) => [u.id, u])), [state.users]);
 
+  /**
+   * Libellé d'un créneau occupé.
+   *
+   * Une séance hors périmètre reste visible — la salle est bel et bien prise —
+   * mais sans le nom du client : un coach n'a pas à connaître la clientèle de
+   * ses collègues. Seul le prénom du coach s'affiche, pour que l'agenda reste
+   * compréhensible.
+   */
+  const bookedLabel = (slot: Slot): string => {
+    if (canSeeBooking(slot.bookingId)) {
+      const booking = state.bookings.find((b) => b.id === slot.bookingId);
+      return usersById.get(booking?.userId ?? '')?.firstName ?? 'Réservé';
+    }
+    const other = full.coaches.find((c) => c.id === slot.coachId);
+    return other ? `Séance · ${other.firstName}` : 'Séance';
+  };
+
   const toggleSlot = async (slot: Slot) => {
     if (slot.state === 'booked') {
-      setDetail(slot);
+      // Le détail d'une séance qu'on n'assure pas n'est pas consultable.
+      if (canSeeBooking(slot.bookingId)) setDetail(slot);
       return;
     }
     if (slot.state === 'blocked' && slot.blockId) {
@@ -72,12 +90,15 @@ export function AdminCalendar({ availability }: { availability: AvailabilityInpu
       return;
     }
     await db.createBlock({
+      // Dans l'espace d'un coach, le blocage ne vaut que pour lui. Dans la vue
+      // « tout le studio », il ferme le créneau pour tout le monde.
+      coachId: coach?.id,
       type: 'slot',
       startDate: slot.date,
       endDate: slot.date,
       startTime: slot.startTime,
       endTime: slot.endTime,
-      reason: 'Indisponible',
+      reason: coach ? `${coach.firstName} — indisponible` : 'Indisponible',
     });
   };
 
@@ -150,13 +171,7 @@ export function AdminCalendar({ availability }: { availability: AvailabilityInpu
                     <td key={day} className="h-10 p-0">
                       <SlotButton
                         slot={slot}
-                        label={
-                          slot.state === 'booked'
-                            ? usersById.get(
-                                state.bookings.find((b) => b.id === slot.bookingId)?.userId ?? '',
-                              )?.firstName ?? 'Réservé'
-                            : ''
-                        }
+                        label={slot.state === 'booked' ? bookedLabel(slot) : ''}
                         onClick={() => void toggleSlot(slot)}
                       />
                     </td>
@@ -201,6 +216,7 @@ export function AdminCalendar({ availability }: { availability: AvailabilityInpu
             (slot) => {
               const booking = state.bookings.find((b) => b.id === slot.bookingId);
               const user = booking ? usersById.get(booking.userId) : undefined;
+              const mine = canSeeBooking(slot.bookingId);
               return (
                 <li key={slot.startTime} className="flex items-center gap-2">
                   <span className="w-12 shrink-0 text-[length:var(--text-xs)] font-semibold text-anthracite/45">
@@ -211,7 +227,9 @@ export function AdminCalendar({ availability }: { availability: AvailabilityInpu
                       slot={slot}
                       label={
                         slot.state === 'booked'
-                          ? `${user?.firstName ?? 'Client'} · ${booking ? OFFERS_BY_ID[booking.offerId].name : ''}`
+                          ? mine
+                            ? `${user?.firstName ?? 'Client'} · ${booking ? OFFERS_BY_ID[booking.offerId].name : ''}`
+                            : bookedLabel(slot)
                           : slot.state === 'blocked'
                             ? 'Bloqué'
                             : 'Libre'
@@ -300,7 +318,7 @@ function Legend() {
 }
 
 function BookingDetail({ slot, onClose }: { slot: Slot; onClose: () => void }) {
-  const state = useDatabase();
+  const state = useAdminData();
   const booking = state.bookings.find((b) => b.id === slot.bookingId);
   const user = booking ? state.users.find((u) => u.id === booking.userId) : undefined;
   if (!booking) return null;

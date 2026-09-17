@@ -22,7 +22,7 @@ export function AuthPanel() {
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
 
   useEffect(() => {
-    if (user) router.replace(user.role === 'admin' ? ADMIN_HREF : ACCOUNT_HREF);
+    if (user) router.replace(user.role === 'client' ? ACCOUNT_HREF : ADMIN_HREF);
   }, [user, router]);
 
   if (!mounted) {
@@ -33,7 +33,7 @@ export function AuthPanel() {
     return (
       <div className="mx-auto flex max-w-xl flex-col items-center gap-4 text-center">
         <p className="text-anthracite/70">Vous êtes connecté. Redirection en cours…</p>
-        <ButtonLink href={user.role === 'admin' ? ADMIN_HREF : ACCOUNT_HREF} size="md">
+        <ButtonLink href={user.role === 'client' ? ACCOUNT_HREF : ADMIN_HREF} size="md">
           Continuer <ArrowRight />
         </ButtonLink>
       </div>

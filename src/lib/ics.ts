@@ -1,7 +1,7 @@
 import { OFFERS_BY_ID } from '@/data/offers';
 import { STUDIO } from './config';
 import { toDateTime } from './date';
-import type { Booking, User } from './types';
+import type { Booking, Coach, User } from './types';
 
 /**
  * Export iCalendar (RFC 5545).
@@ -113,15 +113,28 @@ export function buildIcs(events: IcsEventInput[], calendarName: string): string 
 
 const STUDIO_LOCATION = `${STUDIO.legalName}, ${STUDIO.address.street}, ${STUDIO.address.postalCode} ${STUDIO.address.city}`;
 
-/** Convertit des réservations en événements iCalendar pour l'agenda du coach. */
-export function bookingsToIcs(bookings: Booking[], users: User[], calendarName = 'BOUGE. — Réservations'): string {
+/**
+ * Convertit des réservations en événements iCalendar pour l'agenda du coach.
+ *
+ * Le nom du coach figure dans le descriptif : le gérant exporte l'agenda du
+ * studio entier, il doit voir d'un coup d'œil qui assure quoi sans rouvrir le
+ * site.
+ */
+export function bookingsToIcs(
+  bookings: Booking[],
+  users: User[],
+  calendarName = 'BOUGE. — Réservations',
+  coaches: Coach[] = [],
+): string {
   const byId = new Map(users.map((u) => [u.id, u]));
   const events = bookings.map<IcsEventInput>((booking) => {
     const offer = OFFERS_BY_ID[booking.offerId];
     const user = byId.get(booking.userId);
     const who = user ? `${user.firstName} ${user.lastName}` : 'Client';
+    const coach = coaches.find((c) => c.id === booking.coachId);
     const details = [
       `Formule : ${offer?.name ?? booking.offerId}`,
+      coach ? `Coach : ${coach.firstName} ${coach.lastName}` : null,
       `Participants : ${booking.participants}`,
       `Référence : ${booking.reference}`,
       user?.phone ? `Téléphone : ${user.phone}` : null,

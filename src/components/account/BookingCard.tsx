@@ -5,12 +5,13 @@ import { Calendar } from '@/components/booking/Calendar';
 import { Button } from '@/components/ui/Button';
 import { FormError } from '@/components/ui/Field';
 import { Price } from '@/components/ui/Price';
+import { CoachAvatar } from '@/components/ui/CoachAvatar';
 import { OFFERS_BY_ID } from '@/data/offers';
 import { bookingHorizonEnd, canSelfManage, computeDaySlots, type AvailabilityInput } from '@/lib/availability';
 import { COLOR_CLASSES } from '@/lib/colors';
 import { SCHEDULE, STUDIO } from '@/lib/config';
 import { formatLongDate, formatTime, hoursUntil, todayIso } from '@/lib/date';
-import { useAction } from '@/lib/hooks/useDatabase';
+import { useAction, useCoach } from '@/lib/hooks/useDatabase';
 import { bookingToClientIcs, downloadIcs } from '@/lib/ics';
 import { db } from '@/lib/store/database';
 import type { Booking, IsoDate, Time } from '@/lib/types';
@@ -38,6 +39,7 @@ export function BookingCard({
   past?: boolean;
 }) {
   const offer = OFFERS_BY_ID[booking.offerId];
+  const coach = useCoach(booking.coachId);
   const color = COLOR_CLASSES[offer.color];
   const status = STATUS_LABELS[booking.status];
   const editable = canSelfManage(booking);
@@ -86,6 +88,13 @@ export function BookingCard({
         <span className="font-mono text-[length:var(--text-xs)] font-semibold tracking-wider text-anthracite">
           {booking.reference}
         </span>
+        {/* Qui accueille : la question que se pose le client la veille. */}
+        {coach && (
+          <span className="flex items-center gap-2">
+            <CoachAvatar coach={coach} size="sm" className="size-7" />
+            {coach.firstName} {coach.lastName}
+          </span>
+        )}
         <span>
           {PAYMENT_LABELS[booking.payment.status]} ·{' '}
           <Price cents={booking.payment.amountCents} className="text-[length:var(--text-sm)]" />

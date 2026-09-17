@@ -150,6 +150,76 @@ PLACEHOLDERS = [
 ]
 
 
+# --- Portraits des coachs ----------------------------------------------------
+# Même recette que les visuels du local, au format portrait, avec les initiales
+# en Sun Motter. Le fichier porte le nom du coach : déposer une vraie photo au
+# même nom suffit à la remplacer, sans toucher au code.
+COACHES = [
+    # nom de fichier,      teinte 1,  teinte 2,   initiales, mascotte
+    ("coach-melvin",       ORANGE,    ANTHRACITE, "MM",      "mascotte-lift-light.webp"),
+    ("coach-sarah",        JADE,      ANTHRACITE, "SL",      "mascotte-run-light.webp"),
+    ("coach-karim",        SKY,       BROWN,      "KB",      "mascotte-walk-light.webp"),
+]
+
+SUN_MOTTER = ROOT / "BOUGE-charte graphique" / "FONTS" / "SUN MOTTER" / "SunMotter.otf"
+
+
+def build_coach_photo(name, c1, c2, initials, watermark, w=900, h=1125):
+    """Portrait provisoire d'un coach, au format 4:5."""
+    xs = np.linspace(0, 1, w, dtype=np.float32)
+    ys = np.linspace(0, 1, h, dtype=np.float32)
+    X, Y = np.meshgrid(xs, ys)
+
+    t = np.clip(0.5 + 0.5 * (X - 0.5) + 0.75 * (Y - 0.5) + 0.10 * np.sin(X * 2.6 + Y * 1.8), 0, 1)
+    base = c1[None, None, :] * (1 - t)[:, :, None] + c2[None, None, :] * t[:, :, None]
+
+    # Lumière venant du haut : place le visage attendu dans la zone claire.
+    d2 = (X - 0.5) ** 2 + (Y - 0.02) ** 2
+    base += (CREME - base) * np.exp(-d2 / 0.10, dtype=np.float32)[:, :, None] * 0.30
+
+    img = Image.fromarray(np.clip(base, 0, 255).astype(np.uint8))
+
+    ht = halftone(w, h, spacing=8, radius=2.3, seed=5).filter(ImageFilter.GaussianBlur(0.4))
+    tint = Image.new("RGB", (w, h), tuple(np.clip(c2 * 0.6, 0, 255).astype(int)))
+    img = Image.composite(Image.blend(img, tint, 0.26), img, ht.point(lambda v: int(v * 0.20)))
+
+    # Mascotte en filigrane, en bas — elle occupe la place du buste.
+    wm_path = BRAND / watermark
+    if wm_path.exists():
+        wm = Image.open(wm_path).convert("RGBA")
+        target = int(w * 0.82)
+        wm.thumbnail((target, target), Image.LANCZOS)
+        wm.putalpha(wm.split()[3].point(lambda v: int(v * 0.20)))
+        img = img.convert("RGBA")
+        img.alpha_composite(wm, (int((w - wm.width) / 2), int(h - wm.height * 0.94)))
+        img = img.convert("RGB")
+
+    # Initiales, dans la zone claire du haut.
+    if SUN_MOTTER.exists():
+        from PIL import ImageFont
+
+        font = ImageFont.truetype(str(SUN_MOTTER), int(h * 0.20))
+        layer = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+        d = ImageDraw.Draw(layer)
+        box = d.textbbox((0, 0), initials, font=font)
+        d.text(
+            ((w - (box[2] - box[0])) / 2 - box[0], h * 0.17 - box[1]),
+            initials,
+            font=font,
+            fill=(255, 251, 232, 64),
+        )
+        img = Image.alpha_composite(img.convert("RGBA"), layer).convert("RGB")
+
+    arr = np.asarray(img, np.float32)
+    rng = np.random.default_rng(13)
+    arr += rng.normal(0, 3.0, (h, w, 1))
+    img = Image.fromarray(np.clip(arr, 0, 255).astype(np.uint8))
+
+    dest = OUT / f"{name}.webp"
+    img.save(dest, "WEBP", quality=86, method=6)
+    print(f"    ✓ {dest.name:28s} {dest.stat().st_size // 1024} Ko")
+
+
 def halftone(w, h, spacing=9, radius=2.6, seed=3):
     """Trame de points façon illustration de la mascotte BOUGE."""
     layer = Image.new("L", (w, h), 0)
@@ -240,4 +310,9 @@ if __name__ == "__main__":
     print("Visuels provisoires du local :")
     for name, c1, c2, wm in PLACEHOLDERS:
         build_placeholder(name, c1, c2, wm)
+
+    print("Portraits provisoires des coachs :")
+    for name, c1, c2, initials, wm in COACHES:
+        build_coach_photo(name, c1, c2, initials, wm)
+
     print("Terminé.")
