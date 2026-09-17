@@ -287,7 +287,10 @@
 
 @keyframes u-marquee {
   from { transform: translate3d(0, 0, 0); }
-  to { transform: translate3d(-50%, 0, 0); }
+  /* Un motif exactement, mesuré en pixels par le composant Marquee. Un
+     pourcentage ne conviendrait pas : il se rapporterait à la piste entière,
+     dont la largeur dépend du nombre de motifs, lui-même variable. */
+  to { transform: translate3d(calc(-1 * var(--marquee-shift, 50%)), 0, 0); }
 }
 
 @keyframes u-float {
@@ -310,7 +313,7 @@
   to { opacity: 1; transform: translate3d(0, 0, 0); }
 }
 
-.u-marquee-track { animation: u-marquee 38s linear infinite; }
+.u-marquee-track { animation: u-marquee var(--marquee-duration, 38s) linear infinite; }
 .u-float { animation: u-float 6s ease-in-out infinite; }
 .u-spin-slow { animation: u-spin-slow 22s linear infinite; }
 

@@ -104,27 +104,53 @@ export function Hero() {
         </p>
 
         {/* Le logo est la pièce maîtresse du premier écran. */}
-        <h1
-          className="mb-[clamp(1.25rem,3.5vh,2.25rem)] w-full"
+        {/* Le logo et sa signature manuscrite partagent le même conteneur :
+            la signature se cale ainsi sur le bord droit du logo, quelle que
+            soit la largeur d'écran, sans calcul. */}
+        <div
+          className="mb-[clamp(1.5rem,4vh,2.5rem)] flex w-[min(88vw,clamp(17rem,42vw,34rem))] flex-col"
           style={{
             opacity: mounted ? 1 : 0,
             transform: mounted ? 'none' : 'translateY(26px) scale(0.96)',
             transition: 'opacity 1s ease 0.22s, transform 1.1s cubic-bezier(0.22,1,0.36,1) 0.22s',
           }}
         >
-          <img
-            src={asset('/brand/logo-stack-creme.webp')}
-            alt={`${STUDIO.name} — ${STUDIO.baseline}`}
-            width={1000}
-            height={640}
-            fetchPriority="high"
-            decoding="async"
-            className="mx-auto h-auto w-[min(88vw,clamp(17rem,42vw,34rem))] drop-shadow-[0_18px_44px_rgba(0,0,0,0.42)]"
-          />
-          <span className="sr-only">
-            {STUDIO.name} — studio de coaching sportif à {STUDIO.address.city}
-          </span>
-        </h1>
+          <h1 className="w-full">
+            <img
+              src={asset('/brand/logo-stack-creme.webp')}
+              alt={`${STUDIO.name} — ${STUDIO.baseline}`}
+              width={1000}
+              height={640}
+              fetchPriority="high"
+              decoding="async"
+              className="h-auto w-full drop-shadow-[0_18px_44px_rgba(0,0,0,0.42)]"
+            />
+            <span className="sr-only">
+              {STUDIO.name} — studio de coaching sportif à {STUDIO.address.city}
+            </span>
+          </h1>
+
+          {/* Signature du coach, en Reenie Beanie et légèrement inclinée.
+              Uniquement ici, sur le premier écran de l'accueil.
+
+              Dans le flux et alignée à droite du logo, pas en absolu : la
+              signature doit passer SOUS la ligne « sport et bien plus »
+              incluse dans l'image du logo, or celle-ci est centrée et sa
+              largeur varie avec l'écran — impossible de l'éviter par un
+              placement fixe. Elle occupe donc sa propre ligne.
+
+              La rotation déborde de quelques pixels du bloc, absorbés par les
+              6 vw de marge que laisse le logo à sa largeur maximale. */}
+          <p
+            className="pointer-events-none m-0 -mt-[0.15em] mr-[3%] origin-top-right -rotate-[7deg] self-end font-hand text-[length:clamp(1.5rem,1rem+2.2vw,2.75rem)] leading-none text-creme/85 drop-shadow-[0_2px_10px_rgba(0,0,0,0.5)]"
+            style={{
+              opacity: mounted ? 1 : 0,
+              transition: 'opacity 1s ease 0.75s',
+            }}
+          >
+            By {STUDIO.coach.fullName}
+          </p>
+        </div>
 
         <p
           className="mb-[clamp(1.75rem,4.5vh,2.75rem)] max-w-[22ch] text-balance font-display text-[length:var(--text-3xl)] leading-[0.95] text-creme sm:max-w-[26ch]"
