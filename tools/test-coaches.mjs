@@ -157,6 +157,29 @@ await step('Sarah se connecte et arrive dans son espace', async () => {
   await page.getByText('Espace de Sarah').first().waitFor({ timeout: 3000 });
 });
 
+await step('La barre de navigation envoie Sarah vers son tableau de bord', async () => {
+  // Le bug : la navbar testait « rôle == admin » et renvoyait donc les coachs
+  // vers l'espace client, où ils ne trouvent rien.
+  await page.goto(`http://localhost:${PORT}/`, { waitUntil: 'networkidle' });
+  await page.waitForTimeout(1200);
+  const lien = page.getByRole('link', { name: 'Tableau de bord' }).first();
+  if ((await lien.count()) === 0) {
+    const autre = await page.getByRole('link', { name: 'Mon espace' }).count();
+    throw new Error(autre > 0 ? 'la navbar propose « Mon espace » à un coach' : 'aucun lien d’espace');
+  }
+  await lien.click();
+  await page.waitForTimeout(1200);
+  if (!page.url().includes('/admin/')) throw new Error(`le lien mène à ${page.url()}`);
+});
+
+await step('Un coach qui ouvre /compte/ est renvoyé vers son tableau de bord', async () => {
+  // Corriger le lien ne suffit pas : restent les favoris et les adresses
+  // tapées à la main.
+  await page.goto(`http://localhost:${PORT}/compte/`, { waitUntil: 'networkidle' });
+  await page.waitForTimeout(1600);
+  if (!page.url().includes('/admin/')) throw new Error(`resté sur ${page.url()}`);
+});
+
 await step('Sarah n’a ni « L’équipe », ni « Qui assure quoi », ni sélecteur de périmètre', async () => {
   for (const s of ['L’équipe', 'Qui assure quoi']) {
     if (await page.getByRole('button', { name: sectionName(s), exact: true }).first().isVisible().catch(() => false)) {

@@ -12,7 +12,7 @@ import { useCurrentUser, useDatabase, useMounted } from '@/lib/hooks/useDatabase
 import { bookingsToIcs, downloadIcs } from '@/lib/ics';
 import { myUpcomingRuns, placesLeft } from '@/lib/runs';
 import { db } from '@/lib/store/database';
-import { BOOKING_HREF, LOGIN_HREF } from '@/lib/nav';
+import { ACCOUNT_HREF, BOOKING_HREF, LOGIN_HREF, workspaceFor } from '@/lib/nav';
 import type { Booking } from '@/lib/types';
 
 type Tab = 'upcoming' | 'history' | 'profile';
@@ -31,8 +31,19 @@ export function AccountDashboard() {
   const [tab, setTab] = useState<Tab>('upcoming');
 
   // Page privée : sans session, on renvoie vers l'écran de connexion.
+  //
+  // Et l'espace client n'est pas celui d'un coach : corriger le lien de la
+  // barre de navigation ne suffisait pas, il reste les liens en favori et les
+  // adresses tapées à la main. Un coach qui arrive ici est renvoyé vers son
+  // tableau de bord plutôt que de découvrir un espace client vide.
   useEffect(() => {
-    if (mounted && !user) router.replace(LOGIN_HREF);
+    if (!mounted) return;
+    if (!user) {
+      router.replace(LOGIN_HREF);
+      return;
+    }
+    const { href } = workspaceFor(user.role);
+    if (href !== ACCOUNT_HREF) router.replace(href);
   }, [mounted, user, router]);
 
   const availability = useMemo(
@@ -64,7 +75,7 @@ export function AccountDashboard() {
     };
   }, [state.bookings, user]);
 
-  if (!mounted || !user) {
+  if (!mounted || !user || workspaceFor(user.role).href !== ACCOUNT_HREF) {
     return <div className="h-96 animate-pulse rounded-[1.75rem] bg-anthracite/6" aria-hidden="true" />;
   }
 

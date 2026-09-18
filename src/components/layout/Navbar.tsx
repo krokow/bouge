@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { asset, STUDIO } from '@/lib/config';
 import { useCurrentUser, useMounted } from '@/lib/hooks/useDatabase';
-import { ACCOUNT_HREF, ADMIN_HREF, BOOKING_HREF, LOGIN_HREF, MAIN_NAV } from '@/lib/nav';
+import { BOOKING_HREF, MAIN_NAV, workspaceFor } from '@/lib/nav';
 import { ArrowRight, ButtonLink } from '@/components/ui/Button';
 
 /**
@@ -57,8 +57,7 @@ export function Navbar() {
   }, [open]);
 
   const solid = !isHome || scrolled;
-  const accountHref = user ? (user.role === 'admin' ? ADMIN_HREF : ACCOUNT_HREF) : LOGIN_HREF;
-  const accountLabel = user ? (user.role === 'admin' ? 'Tableau de bord' : 'Mon espace') : 'Se connecter';
+  const { href: accountHref, label: accountLabel } = workspaceFor(user?.role);
 
   return (
     <>

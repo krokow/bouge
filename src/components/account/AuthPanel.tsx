@@ -9,7 +9,7 @@ import { DemoCredentials } from '@/components/booking/steps/CheckoutSteps';
 import { asset, STUDIO } from '@/lib/config';
 import { useAction, useCurrentUser, useMounted } from '@/lib/hooks/useDatabase';
 import { db } from '@/lib/store/database';
-import { ACCOUNT_HREF, ADMIN_HREF, BOOKING_HREF } from '@/lib/nav';
+import { BOOKING_HREF, workspaceFor } from '@/lib/nav';
 
 /**
  * Écran de connexion / création de compte hors tunnel de réservation.
@@ -22,7 +22,7 @@ export function AuthPanel() {
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
 
   useEffect(() => {
-    if (user) router.replace(user.role === 'client' ? ACCOUNT_HREF : ADMIN_HREF);
+    if (user) router.replace(workspaceFor(user.role).href);
   }, [user, router]);
 
   if (!mounted) {
@@ -33,7 +33,7 @@ export function AuthPanel() {
     return (
       <div className="mx-auto flex max-w-xl flex-col items-center gap-4 text-center">
         <p className="text-anthracite/70">Vous êtes connecté. Redirection en cours…</p>
-        <ButtonLink href={user.role === 'client' ? ACCOUNT_HREF : ADMIN_HREF} size="md">
+        <ButtonLink href={workspaceFor(user.role).href} size="md">
           Continuer <ArrowRight />
         </ButtonLink>
       </div>
