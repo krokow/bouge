@@ -16,6 +16,7 @@ import {
   WEEKDAY_SHORT,
 } from '@/lib/date';
 import { useAdminData, useAdminScope } from './AdminScope';
+import { useCurrentCoach } from '@/lib/hooks/useDatabase';
 import { db } from '@/lib/store/database';
 import type { IsoDate, Slot, Time } from '@/lib/types';
 
@@ -32,6 +33,17 @@ import type { IsoDate, Slot, Time } from '@/lib/types';
  */
 export function AdminCalendar() {
   const { data: state, full, availability, coach, canSeeBooking } = useAdminScope();
+  const myCoach = useCurrentCoach();
+
+  /**
+   * Coach dont les séances sont mises en avant.
+   *
+   * C'est celui de l'espace consulté ; dans la vue « tout le studio », c'est
+   * la personne connectée. Le gérant repère ainsi d'un coup d'œil les séances
+   * qu'il assure lui-même au milieu de celles de son équipe, ce qui est la
+   * question qu'on se pose en ouvrant son agenda de la semaine.
+   */
+  const focusCoachId = coach?.id ?? myCoach?.id;
   const [weekStart, setWeekStart] = useState<IsoDate>(startOfWeek(todayIso()));
   const [selectedDay, setSelectedDay] = useState<IsoDate>(todayIso());
   const [detail, setDetail] = useState<Slot | null>(null);
@@ -69,6 +81,14 @@ export function AdminCalendar() {
     const other = full.coaches.find((c) => c.id === slot.coachId);
     return other ? `Séance · ${other.firstName}` : 'Séance';
   };
+
+  /** La séance est-elle assurée par le coach mis en avant ? */
+  const isOwnSlot = (slot: Slot): boolean =>
+    slot.state === 'booked' && Boolean(focusCoachId) && slot.coachId === focusCoachId;
+
+  /** Nom du coach du créneau, pour l'infobulle. */
+  const coachNameOf = (slot: Slot): string | undefined =>
+    full.coaches.find((c) => c.id === slot.coachId)?.firstName;
 
   const toggleSlot = async (slot: Slot) => {
     if (slot.state === 'booked') {
@@ -122,7 +142,10 @@ export function AdminCalendar() {
         </p>
       </div>
 
-      <Legend />
+      <Legend
+        withTeam={full.coaches.length > 1}
+        focusName={full.coaches.find((c) => c.id === focusCoachId)?.firstName}
+      />
 
       {/* Grille hebdomadaire — tablette et plus */}
       <div className="hidden overflow-x-auto md:block">
@@ -172,6 +195,8 @@ export function AdminCalendar() {
                       <SlotButton
                         slot={slot}
                         label={slot.state === 'booked' ? bookedLabel(slot) : ''}
+                        coachName={coachNameOf(slot)}
+                        own={isOwnSlot(slot)}
                         onClick={() => void toggleSlot(slot)}
                       />
                     </td>
@@ -234,6 +259,8 @@ export function AdminCalendar() {
                             ? 'Bloqué'
                             : 'Libre'
                       }
+                      coachName={coachNameOf(slot)}
+                      own={isOwnSlot(slot)}
                       onClick={() => void toggleSlot(slot)}
                       tall
                     />
@@ -261,32 +288,69 @@ export function AdminCalendar() {
   );
 }
 
+/**
+ * Un créneau dans la grille.
+ *
+ * ── Deux façons d'être occupé ───────────────────────────────────────────────
+ * Une séance qu'on assure soi-même est en orange plein : c'est celle qui
+ * engage, celle qu'il faut voir. Une séance tenue par quelqu'un d'autre est
+ * en brun clair : la salle est prise, il n'y a rien à faire, l'œil passe.
+ *
+ * Le libellé disait déjà « Séance · Untel », mais dans une case de grille il
+ * est tronqué, et il faut le lire. La couleur, elle, se voit sans lire —
+ * c'est elle qui doit porter l'information.
+ *
+ * Le brun est choisi parce qu'il reste dans la famille chaude de l'orange
+ * (donc « occupé », et non « libre » comme le vert) tout en étant nettement
+ * plus discret. Il ne se confond ni avec le vert pâle d'un créneau libre, ni
+ * avec l'anthracite plein d'un créneau bloqué.
+ *
+ * L'intensité n'est pas cosmétique : un premier essai à 18 % donnait un beige
+ * si clair qu'il se distinguait mal du vert pâle d'un créneau libre. Or c'est
+ * exactement la confusion à éviter — croire libre un créneau que la salle a
+ * déjà pris. 32 % suffit à trancher, et reste loin de l'orange plein.
+ */
 function SlotButton({
   slot,
   label,
   onClick,
   tall,
+  own = true,
+  coachName,
 }: {
   slot: Slot;
   label: string;
   onClick: () => void;
   tall?: boolean;
+  /** La séance est-elle assurée par le coach de l'espace consulté ? */
+  own?: boolean;
+  /** Prénom du coach qui l'assure, pour l'infobulle. */
+  coachName?: string;
 }) {
   const styles: Record<string, string> = {
     available: 'bg-jade/12 text-jade-dark hover:bg-jade/25',
-    booked: 'bg-orange text-creme hover:bg-orange-dark',
+    booked: own
+      ? 'bg-orange text-creme hover:bg-orange-dark'
+      : 'bg-brun/32 text-brun hover:bg-brun/45',
     blocked: 'bg-anthracite/70 text-creme hover:bg-anthracite',
     past: 'bg-anthracite/5 text-anthracite/30',
     closed: 'bg-anthracite/5 text-anthracite/30',
   };
 
+  const state =
+    slot.state === 'booked'
+      ? own
+        ? 'réservé'
+        : `réservé${coachName ? ` — séance de ${coachName}` : ' par un autre coach'}`
+      : slot.state === 'blocked'
+        ? 'bloqué'
+        : 'libre';
+
   return (
     <button
       type="button"
       onClick={onClick}
-      title={`${formatLongDate(slot.date)} à ${formatTime(slot.startTime)} — ${
-        slot.state === 'booked' ? 'réservé' : slot.state === 'blocked' ? 'bloqué' : 'libre'
-      }`}
+      title={`${formatLongDate(slot.date)} à ${formatTime(slot.startTime)} — ${state}`}
       className={[
         'w-full truncate rounded-md px-1.5 text-[length:var(--text-2xs)] font-semibold transition-colors duration-200',
         tall ? 'min-h-11 text-left text-[length:var(--text-sm)]' : 'h-10',
@@ -298,10 +362,13 @@ function SlotButton({
   );
 }
 
-function Legend() {
+function Legend({ withTeam, focusName }: { withTeam: boolean; focusName?: string }) {
   const items = [
     { label: 'Libre', className: 'bg-jade/25' },
-    { label: 'Réservé', className: 'bg-orange' },
+    // Le libellé nomme la personne quand il y en a plusieurs : « Réservé »
+    // tout court ne dirait pas de qui, ce qui est justement la question.
+    { label: withTeam ? `Séance de ${focusName ?? 'vous'}` : 'Réservé', className: 'bg-orange' },
+    ...(withTeam ? [{ label: 'Séance d’un autre coach', className: 'bg-brun/32' }] : []),
     { label: 'Bloqué', className: 'bg-anthracite/70' },
     { label: 'Fermé', className: 'bg-anthracite/10' },
   ];

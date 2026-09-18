@@ -180,7 +180,28 @@ await step('Son agenda montre les créneaux pris par d’autres, sans nommer leu
   await openSection('Calendrier');
   await page.waitForTimeout(600);
   const anonymous = await page.getByText(/^Séance · /).count();
+  if (anonymous === 0) throw new Error('aucun créneau de collègue affiché');
   console.log(`      ${anonymous} créneaux anonymisés`);
+});
+
+await step('Ses séances et celles des autres n’ont pas la même couleur', async () => {
+  // La couleur doit porter l'information : dans une case de grille, le
+  // libellé « Séance · Untel » est tronqué et demande d'être lu.
+  const tally = await page.evaluate(() => {
+    const out = {};
+    for (const b of document.querySelectorAll('table button')) {
+      const bg = getComputedStyle(b).backgroundColor;
+      out[bg] = (out[bg] ?? 0) + 1;
+    }
+    return out;
+  });
+  const fonds = Object.keys(tally);
+  // Orange plein pour ses séances, brun translucide pour celles des autres.
+  const own = fonds.find((c) => c.includes('226, 97, 41'));
+  const others = fonds.find((c) => c.includes('0.406155') || c.includes('89, 68, 58'));
+  if (!others) throw new Error(`aucun créneau au fond « autre coach » — fonds vus : ${fonds.join(' | ')}`);
+  if (own === others) throw new Error('mêmes couleurs pour ses séances et celles des autres');
+  console.log(`      ${tally[others]} créneaux « autre coach », ${own ? tally[own] : 0} à elle`);
 });
 
 await logout();
