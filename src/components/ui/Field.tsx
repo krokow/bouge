@@ -5,13 +5,21 @@ const INPUT_CLASS =
   'transition-colors duration-200 placeholder:text-anthracite/35 focus:border-orange ' +
   'aria-[invalid=true]:border-orange aria-[invalid=true]:bg-orange/5';
 
+/**
+ * Intitulé d'un champ, avec son aide facultative à droite.
+ *
+ * Les deux textes peuvent passer à la ligne : sans `flex-wrap`, un intitulé un
+ * peu long dans une colonne étroite se superposait à son aide, les deux blocs
+ * refusant de se rétrécir. Cela ne se voyait pas tant que toutes les aides
+ * tenaient en un mot.
+ */
 export function Label({ children, hint }: { children: ReactNode; hint?: string }) {
   return (
-    <span className="flex items-baseline justify-between gap-2">
-      <span className="text-[length:var(--text-2xs)] font-bold uppercase tracking-[0.14em] text-anthracite/55">
+    <span className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-0.5">
+      <span className="min-w-0 text-[length:var(--text-2xs)] font-bold uppercase tracking-[0.14em] text-anthracite/55">
         {children}
       </span>
-      {hint && <span className="text-[length:var(--text-2xs)] text-anthracite/35">{hint}</span>}
+      {hint && <span className="min-w-0 text-[length:var(--text-2xs)] text-anthracite/35">{hint}</span>}
     </span>
   );
 }

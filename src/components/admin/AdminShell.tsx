@@ -10,6 +10,7 @@ import { AdminStats } from './AdminStats';
 import { AdminEmails } from './AdminEmails';
 import { AdminTeam } from './AdminTeam';
 import { AdminAssignments } from './AdminAssignments';
+import { AdminRuns } from './AdminRuns';
 import { AdminScopeProvider, useAdminScope } from './AdminScope';
 import { CoachAvatar } from '@/components/ui/CoachAvatar';
 import { Button } from '@/components/ui/Button';
@@ -28,7 +29,8 @@ export type AdminSection =
   | 'stats'
   | 'emails'
   | 'team'
-  | 'assignments';
+  | 'assignments'
+  | 'runs';
 
 /** `owner: true` : section réservée au gérant du studio. */
 const SECTIONS: Array<{
@@ -44,6 +46,7 @@ const SECTIONS: Array<{
   { id: 'blocks', label: 'Indisponibilités', short: 'Blocages', icon: <IconLock /> },
   { id: 'assignments', label: 'Qui assure quoi', short: 'Coachs', icon: <IconSwap />, owner: true },
   { id: 'team', label: 'L’équipe', short: 'Équipe', icon: <IconTeam />, owner: true },
+  { id: 'runs', label: 'Les runs', short: 'Runs', icon: <IconRun />, owner: true },
   { id: 'stats', label: 'Statistiques', short: 'Stats', icon: <IconChart /> },
   { id: 'emails', label: 'Emails envoyés', short: 'Emails', icon: <IconMail /> },
 ];
@@ -246,6 +249,7 @@ function AdminBody({
           {section === 'blocks' && <AdminBlocks />}
           {section === 'assignments' && <AdminAssignments />}
           {section === 'team' && <AdminTeam onInspect={(c) => { setViewing(c); setSection('overview'); }} />}
+          {section === 'runs' && <AdminRuns />}
           {section === 'stats' && <AdminStats />}
           {section === 'emails' && <AdminEmails />}
         </div>
@@ -411,6 +415,15 @@ function IconTeam() {
       <path d="M2.5 16c0-2.5 2.2-4.2 5-4.2s5 1.7 5 4.2" strokeLinecap="round" />
       <path d="M13.2 5.1a2.6 2.6 0 0 1 0 5" strokeLinecap="round" />
       <path d="M14.5 12.2c1.8.5 3 1.9 3 3.8" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function IconRun() {
+  return (
+    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8" className="size-4" aria-hidden="true">
+      <circle cx="12.5" cy="4" r="1.8" />
+      <path d="M11 8l-3 2 1.5 3M8 10L5 8M9.5 13l-2 4M9.5 13l3 1 1 3" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }

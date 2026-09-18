@@ -246,6 +246,59 @@ export interface Booking {
 }
 
 /* -------------------------------------------------------------------------- */
+/* Runs — séances collectives gratuites                                        */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Une sortie collective gratuite, animée par le gérant.
+ *
+ * Ce n'est PAS une réservation, et c'est pour cela que c'est une entité à part.
+ * Une réservation, c'est une personne qui privatise un créneau pour une à trois
+ * personnes, avec un prix et un paiement. Un run, c'est un événement unique
+ * avec une liste d'inscrits indépendants, gratuit, à dix places. Faire entrer
+ * l'un dans l'autre fragiliserait les deux.
+ *
+ * Le run se tient dehors : il occupe le gérant, pas la salle. Un créneau
+ * confié à un autre coach reste donc réservable à la même heure — voir
+ * `runOccupiesSlot` dans src/lib/runs.ts.
+ */
+export interface SocialRun {
+  id: string;
+  /** Coach qui anime — toujours le titulaire du studio. */
+  coachId: string;
+  date: IsoDate;
+  startTime: Time;
+  endTime: Time;
+  /** Intitulé affiché (« Run du samedi matin »). */
+  title: string;
+  /** Deux lignes : allure, distance, à qui ça s'adresse. */
+  description: string;
+  /** Lieu de rendez-vous, rarement le studio. */
+  meetingPoint: string;
+  /** Nombre de places. Dix par défaut. */
+  capacity: number;
+  /** Un run annulé reste visible du gérant, disparaît du site. */
+  status: 'open' | 'cancelled';
+  createdAt: Timestamp;
+  cancelledAt?: Timestamp;
+}
+
+/**
+ * L'inscription d'une personne à un run.
+ *
+ * Une place par personne : c'est le but du dispositif, récupérer autant de
+ * contacts que de participants. Une inscription annulée est conservée plutôt
+ * que supprimée, pour que le gérant voie les désistements.
+ */
+export interface RunSignup {
+  id: string;
+  runId: string;
+  userId: string;
+  createdAt: Timestamp;
+  cancelledAt?: Timestamp;
+}
+
+/* -------------------------------------------------------------------------- */
 /* Indisponibilités du coach                                                   */
 /* -------------------------------------------------------------------------- */
 
@@ -297,7 +350,7 @@ export interface EmailMessage {
 /* Vues calculées                                                              */
 /* -------------------------------------------------------------------------- */
 
-export type SlotState = 'available' | 'booked' | 'blocked' | 'past' | 'closed';
+export type SlotState = 'available' | 'booked' | 'run' | 'blocked' | 'past' | 'closed';
 
 export interface Slot {
   date: IsoDate;
@@ -310,4 +363,6 @@ export interface Slot {
   blockId?: string;
   /** Coach qui assure ce créneau, d'après les affectations en vigueur. */
   coachId?: string;
+  /** Run collectif occupant le créneau, le cas échéant. */
+  runId?: string;
 }

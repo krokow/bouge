@@ -1,4 +1,15 @@
-import type { Assignment, Block, Booking, Coach, Credential, EmailMessage, Session, User } from '@/lib/types';
+import type {
+  Assignment,
+  Block,
+  Booking,
+  Coach,
+  Credential,
+  EmailMessage,
+  RunSignup,
+  Session,
+  SocialRun,
+  User,
+} from '@/lib/types';
 
 /**
  * Forme complète de la « base » de démonstration.
@@ -18,12 +29,16 @@ export interface DatabaseShape {
   assignments: Assignment[];
   bookings: Booking[];
   blocks: Block[];
+  /** Sorties collectives gratuites programmées par le gérant. */
+  runs: SocialRun[];
+  /** Inscriptions à ces sorties, une par personne. */
+  runSignups: RunSignup[];
   emails: EmailMessage[];
   session: Session | null;
 }
 
-export const DB_VERSION = 5;
-export const DB_STORAGE_KEY = 'bouge.db.v5';
+export const DB_VERSION = 6;
+export const DB_STORAGE_KEY = 'bouge.db.v6';
 
 export function emptyDatabase(): DatabaseShape {
   return {
@@ -34,6 +49,8 @@ export function emptyDatabase(): DatabaseShape {
     assignments: [],
     bookings: [],
     blocks: [],
+    runs: [],
+    runSignups: [],
     emails: [],
     session: null,
   };
@@ -99,4 +116,4 @@ export function digestPassword(password: string): string {
   return `demo$${hash.toString(36)}$${password.length}`;
 }
 
-export type { Assignment, Block, Booking, Coach, Credential, EmailMessage, Session, User };
+export type { Assignment, Block, Booking, Coach, Credential, EmailMessage, RunSignup, Session, SocialRun, User };

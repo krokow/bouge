@@ -92,9 +92,10 @@ export function BookingFunnel() {
       blocks: state.blocks,
       coaches: state.coaches,
       assignments: state.assignments,
+      runs: state.runs,
       coachChoice,
     }),
-    [state.bookings, state.blocks, state.coaches, state.assignments, coachChoice],
+    [state.bookings, state.blocks, state.coaches, state.assignments, state.runs, coachChoice],
   );
 
   /**
@@ -105,7 +106,13 @@ export function BookingFunnel() {
    * devant un calendrier vide à l'étape suivante.
    */
   const countFor = useMemo(() => {
-    const base = { bookings: state.bookings, blocks: state.blocks, coaches: state.coaches, assignments: state.assignments };
+    const base = {
+      bookings: state.bookings,
+      blocks: state.blocks,
+      coaches: state.coaches,
+      assignments: state.assignments,
+      runs: state.runs,
+    };
     const from = todayIso();
     return (choice: CoachChoice) => {
       let total = 0;
@@ -114,7 +121,7 @@ export function BookingFunnel() {
       }
       return total;
     };
-  }, [state.bookings, state.blocks, state.coaches, state.assignments]);
+  }, [state.bookings, state.blocks, state.coaches, state.assignments, state.runs]);
   const maxDate = useMemo(() => bookingHorizonEnd(), []);
 
   const { run: submit, pending, error } = useAction(db.createBooking.bind(db));

@@ -3,12 +3,14 @@
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import { BookingCard } from './BookingCard';
+import { RunCard } from '@/components/runs/RunCard';
 import { ArrowRight, Button, ButtonLink } from '@/components/ui/Button';
 import { Checkbox, TextField } from '@/components/ui/Field';
 import { asset, STUDIO } from '@/lib/config';
 import { toDateTime, todayIso } from '@/lib/date';
 import { useCurrentUser, useDatabase, useMounted } from '@/lib/hooks/useDatabase';
 import { bookingsToIcs, downloadIcs } from '@/lib/ics';
+import { myUpcomingRuns, placesLeft } from '@/lib/runs';
 import { db } from '@/lib/store/database';
 import { BOOKING_HREF, LOGIN_HREF } from '@/lib/nav';
 import type { Booking } from '@/lib/types';
@@ -34,8 +36,18 @@ export function AccountDashboard() {
   }, [mounted, user, router]);
 
   const availability = useMemo(
-    () => ({ bookings: state.bookings, blocks: state.blocks }),
-    [state.bookings, state.blocks],
+    // Équipe, affectations et sorties comprises : c'est cette entrée qui
+    // alimente le report d'une séance. Sans elles, le client pourrait déplacer
+    // son rendez-vous sur un créneau où le coach est en sortie, ou sur un
+    // créneau fermé pour ce coach-là seulement.
+    () => ({
+      bookings: state.bookings,
+      blocks: state.blocks,
+      coaches: state.coaches,
+      assignments: state.assignments,
+      runs: state.runs,
+    }),
+    [state.bookings, state.blocks, state.coaches, state.assignments, state.runs],
   );
 
   const { upcoming, history } = useMemo(() => {
@@ -116,6 +128,11 @@ export function AccountDashboard() {
 
       {tab === 'upcoming' && (
         <section className="flex flex-col gap-4">
+          {/* Les sorties collectives passent devant : elles sont gratuites et
+              les places se rendent, mieux vaut que l'oubli se voie tout de
+              suite. Elles n'apparaissent que si la personne en a réservé une. */}
+          <MyRuns />
+
           {upcoming.length === 0 ? (
             <EmptyState
               title="Aucune séance prévue"
@@ -165,6 +182,39 @@ export function AccountDashboard() {
 
       {tab === 'profile' && <ProfilePanel />}
     </div>
+  );
+}
+
+/**
+ * Les sorties collectives auxquelles la personne est inscrite.
+ *
+ * Même carte que sur le site public : elle porte déjà le bouton de
+ * désinscription, la date et le point de rendez-vous. Rien à réécrire.
+ */
+function MyRuns() {
+  const user = useCurrentUser();
+  const state = useDatabase();
+
+  const mine = useMemo(
+    () => myUpcomingRuns(state.runs, state.runSignups, user?.id),
+    [state.runs, state.runSignups, user?.id],
+  );
+
+  if (mine.length === 0) return null;
+
+  return (
+    <section id="mes-sorties" aria-labelledby="mes-sorties-titre" className="flex flex-col gap-3">
+      <h2 id="mes-sorties-titre" className="text-[length:var(--text-xl)]">
+        {mine.length > 1 ? 'Vos prochaines sorties' : 'Votre prochaine sortie'}
+      </h2>
+      <ul className="flex flex-col gap-3">
+        {mine.map((run) => (
+          <li key={run.id}>
+            <RunCard run={run} left={placesLeft(run, state.runSignups)} mine />
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
 

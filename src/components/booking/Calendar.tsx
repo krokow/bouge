@@ -132,6 +132,9 @@ export function Calendar({
                 key={cell.date}
                 type="button"
                 role="gridcell"
+                /* Repère stable pour les tests de bout en bout : viser une
+                   date par son libellé français est fragile. */
+                data-date={cell.date}
                 aria-selected={selected}
                 aria-label={`${formatLongDate(cell.date)}${
                   cell.selectable ? ` — ${cell.slots} créneau${cell.slots > 1 ? 'x' : ''} disponible${cell.slots > 1 ? 's' : ''}` : ' — indisponible'

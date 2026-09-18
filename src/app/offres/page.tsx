@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { OFFERS } from '@/data/offers';
 import { ArrowRight, ButtonLink } from '@/components/ui/Button';
+import { RunsSection } from '@/components/runs/RunsSection';
 import { Marquee } from '@/components/ui/Marquee';
 import { OfferShowcase } from '@/components/offers/OfferShowcase';
 import { PageHero } from '@/components/ui/PageHero';
@@ -176,6 +177,10 @@ export default function OffresPage() {
           </Reveal>
         </div>
       </section>
+
+      {/* Après le comparatif : quand on hésite encore entre deux formules,
+          la bonne réponse est parfois de venir courir gratuitement d'abord. */}
+      <RunsSection id="les-runs" />
 
       <section className="u-section bg-anthracite text-creme">
         <div className="u-container grid gap-[var(--spacing-fluid-4)] lg:grid-cols-[0.9fr_1.1fr]">

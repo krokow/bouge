@@ -3,6 +3,7 @@
 import { OFFERS_BY_ID } from '@/data/offers';
 import { SCHEDULE, STUDIO } from '@/lib/config';
 import { ANY_COACH, coachById, coachName, type CoachChoice, ownerCoach, resolveCoachId } from '@/lib/coaches';
+import { isPastRun, placesLeft, RUN_CAPACITY, signupsForRun } from '@/lib/runs';
 import { addMinutesToTime, formatLongDate, formatTime, toDateTime } from '@/lib/date';
 import { formatPrice } from '@/lib/format';
 import type {
@@ -10,6 +11,8 @@ import type {
   Block,
   Booking,
   Coach,
+  RunSignup,
+  SocialRun,
   EmailKind,
   EmailMessage,
   IsoDate,
@@ -50,6 +53,8 @@ import { createSeedDatabase } from './seed';
  *   createBlock / deleteBlock  → POST|DELETE /api/blocks
  *   addCoach / updateCoach     → POST|PATCH  /api/coaches
  *   assignCoach / unassign     → POST|DELETE /api/assignments
+ *   createRun / cancelRun      → POST|DELETE /api/runs
+ *   joinRun / leaveRun         → POST|DELETE /api/runs/:id/signups
  *   emails                     → file d'attente serveur (Brevo, Postmark, SES…)
  */
 class BougeDatabase {
@@ -96,6 +101,8 @@ class BougeDatabase {
       assignments: [...this.state.assignments],
       bookings: [...this.state.bookings],
       blocks: [...this.state.blocks],
+      runs: [...this.state.runs],
+      runSignups: [...this.state.runSignups],
       emails: [...this.state.emails],
     };
     if (typeof window === 'undefined') return;
@@ -233,6 +240,7 @@ class BougeDatabase {
     this.state.users = this.state.users.filter((u) => u.id !== userId);
     this.state.credentials = this.state.credentials.filter((c) => c.userId !== userId);
     this.state.bookings = this.state.bookings.filter((b) => b.userId !== userId);
+    this.state.runSignups = this.state.runSignups.filter((r) => r.userId !== userId);
     this.state.session = null;
     this.commit();
   }
@@ -639,6 +647,213 @@ class BougeDatabase {
   async deleteAssignment(assignmentId: string): Promise<void> {
     this.hydrate();
     this.state.assignments = this.state.assignments.filter((a) => a.id !== assignmentId);
+    this.commit();
+  }
+
+  /* --- Runs : sorties collectives gratuites ----------------------------- */
+  /*
+   * Réservé au gérant, qui les anime toutes. Contrôle côté navigateur en
+   * démonstration, à refaire côté serveur à la migration.
+   */
+
+  async createRun(input: {
+    date: IsoDate;
+    startTime: Time;
+    title: string;
+    description?: string;
+    meetingPoint?: string;
+    capacity?: number;
+  }): Promise<SocialRun> {
+    this.hydrate();
+    const owner = ownerCoach(this.state.coaches);
+    if (!owner) throw new Error('Aucun gérant identifié pour animer la sortie.');
+
+    const endTime = addMinutesToTime(input.startTime, SCHEDULE.slotMinutes);
+
+    // Deux sorties ne peuvent pas se chevaucher : le gérant ne peut pas être
+    // à deux endroits, et un doublon accidentel est vite arrivé.
+    const clash = this.state.runs.some(
+      (r) =>
+        r.status === 'open' &&
+        r.date === input.date &&
+        r.startTime < endTime &&
+        input.startTime < r.endTime,
+    );
+    if (clash) throw new Error('Une sortie est déjà programmée sur ce créneau.');
+
+    // Une séance déjà vendue passe avant : on ne la sacrifie pas pour un run.
+    const booked = this.state.bookings.some(
+      (b) =>
+        b.status !== 'cancelled' &&
+        b.date === input.date &&
+        b.coachId === owner.id &&
+        b.startTime < endTime &&
+        input.startTime < b.endTime,
+    );
+    if (booked) {
+      throw new Error('Une séance est déjà réservée sur ce créneau. Annulez-la d’abord, ou choisissez une autre heure.');
+    }
+
+    const run: SocialRun = {
+      id: newId('run'),
+      coachId: owner.id,
+      date: input.date,
+      startTime: input.startTime,
+      endTime,
+      title: input.title.trim() || 'Run collectif',
+      description: input.description?.trim() ?? '',
+      meetingPoint: input.meetingPoint?.trim() || `${STUDIO.address.street}, ${STUDIO.address.city}`,
+      capacity: input.capacity && input.capacity > 0 ? input.capacity : RUN_CAPACITY,
+      status: 'open',
+      createdAt: new Date().toISOString(),
+    };
+    this.state.runs = [...this.state.runs, run];
+    this.commit();
+    return run;
+  }
+
+  async updateRun(
+    runId: string,
+    patch: Partial<Pick<SocialRun, 'title' | 'description' | 'meetingPoint' | 'capacity'>>,
+  ): Promise<void> {
+    this.hydrate();
+    const existing = this.state.runs.find((r) => r.id === runId);
+    if (!existing) return;
+
+    // Réduire le nombre de places en dessous des inscrits déjà là reviendrait
+    // à décider en silence qui reste dehors.
+    if (patch.capacity !== undefined) {
+      const taken = signupsForRun(this.state.runSignups, runId).length;
+      if (patch.capacity < taken) {
+        throw new Error(`${taken} personnes sont déjà inscrites : le nombre de places ne peut pas descendre en dessous.`);
+      }
+    }
+
+    this.state.runs = this.state.runs.map((r) => (r.id === runId ? { ...r, ...patch } : r));
+    this.commit();
+  }
+
+  /**
+   * Annule une sortie et prévient les inscrits.
+   *
+   * La sortie n'est pas supprimée : le gérant garde la trace de ce qui était
+   * prévu, et les inscriptions restent rattachées.
+   */
+  async cancelRun(runId: string, reason?: string): Promise<void> {
+    this.hydrate();
+    const run = this.state.runs.find((r) => r.id === runId);
+    if (!run || run.status === 'cancelled') return;
+
+    const cancelledAt = new Date().toISOString();
+    this.state.runs = this.state.runs.map((r) =>
+      r.id === runId ? { ...r, status: 'cancelled' as const, cancelledAt } : r,
+    );
+
+    for (const signup of signupsForRun(this.state.runSignups, runId)) {
+      const user = this.state.users.find((u) => u.id === signup.userId);
+      if (!user) continue;
+      this.queueEmail({
+        kind: 'cancellation',
+        to: user.email,
+        subject: `Sortie annulée — ${formatLongDate(run.date)}`,
+        body:
+          `Bonjour ${user.firstName},\n\n` +
+          `La sortie « ${run.title} » du ${formatLongDate(run.date)} à ${formatTime(run.startTime)} est annulée.\n` +
+          (reason ? `Motif : ${reason}\n` : '') +
+          `\nAucune démarche de votre part, votre place est libérée. La prochaine date sera annoncée sur le site.\n\n` +
+          `À bientôt,\n${STUDIO.coach.firstName}`,
+      });
+    }
+    this.commit();
+  }
+
+  /** Supprime définitivement une sortie sans inscrit. */
+  async deleteRun(runId: string): Promise<void> {
+    this.hydrate();
+    if (signupsForRun(this.state.runSignups, runId).length > 0) {
+      throw new Error('Des personnes sont inscrites : annulez la sortie plutôt que de la supprimer, elles seront prévenues.');
+    }
+    this.state.runs = this.state.runs.filter((r) => r.id !== runId);
+    this.state.runSignups = this.state.runSignups.filter((r) => r.runId !== runId);
+    this.commit();
+  }
+
+  /* --- Inscriptions aux runs -------------------------------------------- */
+
+  async joinRun(runId: string, userId: string): Promise<RunSignup> {
+    this.hydrate();
+    const run = this.state.runs.find((r) => r.id === runId);
+    if (!run) throw new Error('Cette sortie n’existe plus.');
+    if (run.status === 'cancelled') throw new Error('Cette sortie a été annulée.');
+    if (isPastRun(run)) throw new Error('Cette sortie a déjà eu lieu.');
+
+    const already = this.state.runSignups.find(
+      (s) => s.runId === runId && s.userId === userId && !s.cancelledAt,
+    );
+    if (already) return already;
+
+    // Contrôle refait au moment de valider, et pas seulement à l'affichage :
+    // deux personnes peuvent viser la dernière place en même temps.
+    if (placesLeft(run, this.state.runSignups) <= 0) {
+      throw new Error('La dernière place vient d’être prise. Guettez la prochaine date.');
+    }
+
+    const signup: RunSignup = {
+      id: newId('rsg'),
+      runId,
+      userId,
+      createdAt: new Date().toISOString(),
+    };
+    this.state.runSignups = [...this.state.runSignups, signup];
+
+    const user = this.state.users.find((u) => u.id === userId);
+    if (user) {
+      this.queueEmail({
+        kind: 'confirmation',
+        to: user.email,
+        subject: `Inscription confirmée — ${run.title}, ${formatLongDate(run.date)}`,
+        body:
+          `Bonjour ${user.firstName},\n\n` +
+          `Votre place est réservée pour « ${run.title} ».\n\n` +
+          `  Date            ${formatLongDate(run.date)}\n` +
+          `  Heure           ${formatTime(run.startTime)} — ${formatTime(run.endTime)}\n` +
+          `  Rendez-vous     ${run.meetingPoint}\n` +
+          `  Participation   gratuite\n\n` +
+          `C'est une sortie collective : on court à l'allure du groupe, personne n'est laissé derrière.\n` +
+          `Si vous ne pouvez plus venir, désinscrivez-vous depuis votre espace : votre place profitera à quelqu'un d'autre.\n\n` +
+          `À très vite,\n${STUDIO.coach.firstName}`,
+      });
+      this.queueEmail({
+        kind: 'reminder',
+        to: user.email,
+        subject: `Rappel — ${run.title} demain à ${formatTime(run.startTime)}`,
+        body:
+          `Bonjour ${user.firstName},\n\n` +
+          `Petit rappel : « ${run.title} » a lieu ${formatLongDate(run.date)} à ${formatTime(run.startTime)}.\n` +
+          `Rendez-vous : ${run.meetingPoint}.\n\n` +
+          `À demain,\n${STUDIO.coach.firstName}`,
+        scheduledFor: new Date(
+          toDateTime(run.date, run.startTime).getTime() - SCHEDULE.reminderHoursBefore * 3_600_000,
+        ).toISOString(),
+      });
+    }
+
+    this.commit();
+    return signup;
+  }
+
+  /**
+   * Désinscription.
+   *
+   * Possible jusqu'au départ, sans délai : il n'y a pas d'argent en jeu, et
+   * plus tôt la place est rendue, plus elle a de chances de servir.
+   */
+  async leaveRun(runId: string, userId: string): Promise<void> {
+    this.hydrate();
+    const cancelledAt = new Date().toISOString();
+    this.state.runSignups = this.state.runSignups.map((s) =>
+      s.runId === runId && s.userId === userId && !s.cancelledAt ? { ...s, cancelledAt } : s,
+    );
     this.commit();
   }
 

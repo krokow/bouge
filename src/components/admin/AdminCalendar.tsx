@@ -86,6 +86,13 @@ export function AdminCalendar() {
   const isOwnSlot = (slot: Slot): boolean =>
     slot.state === 'booked' && Boolean(focusCoachId) && slot.coachId === focusCoachId;
 
+  /** Titre de la sortie occupant le créneau. */
+  const runLabel = (slot: Slot): string => {
+    if (slot.state !== 'run') return '';
+    const run = full.runs.find((r) => r.id === slot.runId);
+    return run ? run.title : 'Sortie collective';
+  };
+
   /** Nom du coach du créneau, pour l'infobulle. */
   const coachNameOf = (slot: Slot): string | undefined =>
     full.coaches.find((c) => c.id === slot.coachId)?.firstName;
@@ -94,6 +101,11 @@ export function AdminCalendar() {
     if (slot.state === 'booked') {
       // Le détail d'une séance qu'on n'assure pas n'est pas consultable.
       if (canSeeBooking(slot.bookingId)) setDetail(slot);
+      return;
+    }
+    if (slot.state === 'run') {
+      // Une sortie se gère depuis « Les runs » : un clic ici ne doit surtout
+      // pas poser un blocage par-dessus, ce que ferait la suite sans ce garde.
       return;
     }
     if (slot.state === 'blocked' && slot.blockId) {
@@ -144,6 +156,7 @@ export function AdminCalendar() {
 
       <Legend
         withTeam={full.coaches.length > 1}
+        withRuns={full.runs.length > 0}
         focusName={full.coaches.find((c) => c.id === focusCoachId)?.firstName}
       />
 
@@ -194,7 +207,7 @@ export function AdminCalendar() {
                     <td key={day} className="h-10 p-0">
                       <SlotButton
                         slot={slot}
-                        label={slot.state === 'booked' ? bookedLabel(slot) : ''}
+                        label={slot.state === 'booked' ? bookedLabel(slot) : runLabel(slot)}
                         coachName={coachNameOf(slot)}
                         own={isOwnSlot(slot)}
                         onClick={() => void toggleSlot(slot)}
@@ -255,7 +268,9 @@ export function AdminCalendar() {
                           ? mine
                             ? `${user?.firstName ?? 'Client'} · ${booking ? OFFERS_BY_ID[booking.offerId].name : ''}`
                             : bookedLabel(slot)
-                          : slot.state === 'blocked'
+                          : slot.state === 'run'
+                            ? runLabel(slot)
+                            : slot.state === 'blocked'
                             ? 'Bloqué'
                             : 'Libre'
                       }
@@ -332,6 +347,10 @@ function SlotButton({
     booked: own
       ? 'bg-orange text-creme hover:bg-orange-dark'
       : 'bg-brun/32 text-brun hover:bg-brun/45',
+    // Le ciel n'est employé nulle part ailleurs dans la grille : une sortie
+    // ne se confond donc avec aucun autre état. Elle n'est pas cliquable, d'où
+    // l'absence d'effet au survol.
+    run: 'bg-ciel text-anthracite',
     blocked: 'bg-anthracite/70 text-creme hover:bg-anthracite',
     past: 'bg-anthracite/5 text-anthracite/30',
     closed: 'bg-anthracite/5 text-anthracite/30',
@@ -342,9 +361,11 @@ function SlotButton({
       ? own
         ? 'réservé'
         : `réservé${coachName ? ` — séance de ${coachName}` : ' par un autre coach'}`
-      : slot.state === 'blocked'
-        ? 'bloqué'
-        : 'libre';
+      : slot.state === 'run'
+        ? 'sortie collective'
+        : slot.state === 'blocked'
+          ? 'bloqué'
+          : 'libre';
 
   return (
     <button
@@ -362,13 +383,14 @@ function SlotButton({
   );
 }
 
-function Legend({ withTeam, focusName }: { withTeam: boolean; focusName?: string }) {
+function Legend({ withTeam, withRuns, focusName }: { withTeam: boolean; withRuns: boolean; focusName?: string }) {
   const items = [
     { label: 'Libre', className: 'bg-jade/25' },
     // Le libellé nomme la personne quand il y en a plusieurs : « Réservé »
     // tout court ne dirait pas de qui, ce qui est justement la question.
     { label: withTeam ? `Séance de ${focusName ?? 'vous'}` : 'Réservé', className: 'bg-orange' },
     ...(withTeam ? [{ label: 'Séance d’un autre coach', className: 'bg-brun/32' }] : []),
+    ...(withRuns ? [{ label: 'Sortie collective', className: 'bg-ciel' }] : []),
     { label: 'Bloqué', className: 'bg-anthracite/70' },
     { label: 'Fermé', className: 'bg-anthracite/10' },
   ];

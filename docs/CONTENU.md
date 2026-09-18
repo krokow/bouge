@@ -29,6 +29,7 @@ Voici ce qui doit être relu ou corrigé, par ordre d'importance.
 | Les deux autres coachs | Sarah Lemoine et Karim Benali, entièrement inventés | `src/lib/config.ts` → `TEAM_SEED` |
 | Portraits des coachs | Aplats de marque avec initiales, générés par `tools/build-media.py` | `public/media/coach-*.webp` |
 | Publications Instagram affichées | Quatre visuels du studio et des légendes écrites pour la maquette | `src/lib/instagram.ts` |
+| Sorties collectives de démonstration | Trois runs inventés, dont un passé et un presque complet | `src/lib/store/seed.ts` |
 | Ouverture du cabinet d'ostéopathie | « l'an prochain » | `src/components/home/OsteoTeaser.tsx` |
 
 > ⚠️ Les **témoignages** doivent impérativement être remplacés par de vrais avis
@@ -47,6 +48,14 @@ Voici ce qui doit être relu ou corrigé, par ordre d'importance.
 > « L'équipe »), ou les retirer — si Melvin reste seul, la section « L'équipe »
 > de la page À propos disparaît d'elle-même et l'étape « Votre coach » du
 > tunnel n'affiche plus que lui.
+>
+> Les **sorties collectives** du jeu de démonstration (« Run du samedi »,
+> « Run de la Défense ») sont inventées, ainsi que leurs inscrits. Elles se
+> calent automatiquement sur les prochains samedis pour que la démonstration
+> reste crédible quelle que soit la date. Melvin programmera les vraies depuis
+> son espace, section « Les runs » — et s'il n'en programme aucune, le site
+> affiche « les prochaines dates arrivent bientôt » au lieu de faire
+> disparaître la rubrique.
 >
 > Le **nombre d'abonnés** est écrit en dur. Il est affiché arrondi et précédé
 > d'un « + » pour rester vrai tant que le compte grossit, mais il mérite d'être

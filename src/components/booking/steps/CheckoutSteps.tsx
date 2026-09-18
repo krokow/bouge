@@ -134,7 +134,7 @@ export function AuthStep({
   );
 }
 
-function SignUpForm() {
+export function SignUpForm() {
   const [form, setForm] = useState({
     firstName: '',
     lastName: '',
@@ -236,7 +236,7 @@ function SignUpForm() {
   );
 }
 
-function SignInForm() {
+export function SignInForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const { run, pending, error } = useAction((e: string, p: string) => db.signIn(e, p));

@@ -141,6 +141,39 @@ CREATE UNIQUE INDEX bookings_one_per_slot
   ON bookings (date, start_time)
   WHERE status <> 'cancelled';
 
+-- Sorties collectives gratuites, animées par le titulaire.
+-- Ce n'est PAS une réservation : une réservation privatise un créneau pour
+-- une à trois personnes contre paiement, une sortie est un événement unique
+-- à dix places avec une liste d'inscrits indépendants.
+CREATE TABLE social_runs (
+  id            uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  coach_id      uuid NOT NULL REFERENCES coaches(id) ON DELETE RESTRICT,
+  date          date NOT NULL,
+  start_time    time NOT NULL,
+  end_time      time NOT NULL,
+  title         text NOT NULL,
+  description   text NOT NULL DEFAULT '',
+  meeting_point text NOT NULL,
+  capacity      smallint NOT NULL CHECK (capacity > 0),
+  status        text NOT NULL DEFAULT 'open' CHECK (status IN ('open','cancelled')),
+  created_at    timestamptz NOT NULL DEFAULT now(),
+  cancelled_at  timestamptz
+);
+
+CREATE TABLE run_signups (
+  id         uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  run_id     uuid NOT NULL REFERENCES social_runs(id) ON DELETE CASCADE,
+  user_id    uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  cancelled_at timestamptz
+);
+
+-- Une place par personne : impossible de s'inscrire deux fois à la même
+-- sortie. La contrainte est en base, pas seulement à l'écran.
+CREATE UNIQUE INDEX run_signups_one_per_person
+  ON run_signups (run_id, user_id)
+  WHERE cancelled_at IS NULL;
+
 CREATE TABLE blocks (
   id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   -- NULL : le studio entier est fermé. Renseigné : ce coach seul est absent.
@@ -155,6 +188,12 @@ CREATE TABLE blocks (
   CHECK (end_date >= start_date)
 );
 ```
+
+> **La dernière place d'une sortie** pose le même problème que le dernier
+> créneau : deux personnes peuvent la viser en même temps. L'index unique
+> ci-dessus empêche le doublon, mais pas le dépassement de capacité — le
+> comptage doit se faire dans une transaction `SERIALIZABLE`, ou derrière un
+> `SELECT … FOR UPDATE` sur la ligne de la sortie.
 
 > **Point important.** Dans la démonstration, la vérification « ce créneau
 > est-il encore libre ? » est faite en JavaScript. En production elle doit être

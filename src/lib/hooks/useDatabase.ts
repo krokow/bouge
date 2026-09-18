@@ -4,7 +4,8 @@ import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 
 import { db } from '@/lib/store/database';
 import type { DatabaseShape } from '@/lib/store/schema';
 import { bookableCoaches, coachById } from '@/lib/coaches';
-import type { Coach, User } from '@/lib/types';
+import { isSignedUp, placesLeft, upcomingRuns } from '@/lib/runs';
+import type { Coach, SocialRun, User } from '@/lib/types';
 
 /**
  * Accès réactif à la base de démonstration.
@@ -57,6 +58,31 @@ export function useCurrentCoach(): Coach | null {
 /** Retrouve un coach par son identifiant, sans recharger toute la liste. */
 export function useCoach(coachId: string | undefined): Coach | undefined {
   return coachById(useCoaches(), coachId);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Runs                                                                        */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Sorties collectives à venir, avec ce qu'il faut pour les afficher.
+ *
+ * Le décompte des places et l'état « déjà inscrit » sont calculés ici plutôt
+ * que dans chaque composant : trois écrans les affichent, et ils doivent dire
+ * la même chose.
+ */
+export function useUpcomingRuns(): Array<{ run: SocialRun; left: number; mine: boolean }> {
+  const state = useDatabase();
+  const user = useCurrentUser();
+  return useMemo(
+    () =>
+      upcomingRuns(state.runs).map((run) => ({
+        run,
+        left: placesLeft(run, state.runSignups),
+        mine: isSignedUp(state.runSignups, run.id, user?.id),
+      })),
+    [state.runs, state.runSignups, user?.id],
+  );
 }
 
 /**

@@ -1,7 +1,8 @@
 import { SCHEDULE } from './config';
 import { addDays, addMinutesToTime, minutesToTime, timeToMinutes, toDateTime, todayIso, weekdayOf } from './date';
 import { ANY_COACH, blockAppliesToSlot, type CoachChoice, resolveCoachId } from './coaches';
-import type { Assignment, Block, Booking, Coach, IsoDate, Slot, SlotState, Time } from './types';
+import { runOccupiesSlot } from './runs';
+import type { Assignment, Block, Booking, Coach, IsoDate, RunSignup, Slot, SlotState, SocialRun, Time } from './types';
 
 /**
  * Calcul des disponibilités.
@@ -50,6 +51,11 @@ export interface AvailabilityInput {
   blocks: Block[];
   /** L'équipe du studio. Vide en l'absence de données : tout reste ouvert. */
   coaches?: Coach[];
+  /**
+   * Sorties collectives. Elles occupent le coach qui les anime, pas la salle :
+   * un créneau confié à quelqu'un d'autre reste réservable pendant un run.
+   */
+  runs?: SocialRun[];
   /** Qui assure quoi. Ce qui n'est pas affecté revient au titulaire. */
   assignments?: Assignment[];
   /**
@@ -73,12 +79,13 @@ export interface AvailabilityInput {
  * partir du même calcul.
  */
 export function computeDaySlots(date: IsoDate, input: AvailabilityInput): Slot[] {
-  const { bookings, blocks, coaches = [], assignments = [], now = new Date(), ignoreBookingId } = input;
+  const { bookings, blocks, coaches = [], assignments = [], runs = [], now = new Date(), ignoreBookingId } = input;
   const times = openingTimes(date);
   if (times.length === 0 || SCHEDULE.closedDates.includes(date)) return [];
 
   const dayBookings = bookings.filter((b) => b.date === date && b.id !== ignoreBookingId && occupiesSlot(b));
   const dayBlocks = blocks.filter((b) => date >= b.startDate && date <= b.endDate);
+  const dayRuns = runs.filter((r) => r.date === date && r.status === 'open');
   const earliest = now.getTime() + SCHEDULE.minNoticeHours * 3_600_000;
 
   return times.map((startTime) => {
@@ -86,6 +93,7 @@ export function computeDaySlots(date: IsoDate, input: AvailabilityInput): Slot[]
     let state: SlotState = 'available';
     let bookingId: string | undefined;
     let blockId: string | undefined;
+    let runId: string | undefined;
 
     const booking = dayBookings.find((b) => overlaps(startTime, endTime, b.startTime, b.endTime));
 
@@ -95,19 +103,24 @@ export function computeDaySlots(date: IsoDate, input: AvailabilityInput): Slot[]
     const coachId = booking?.coachId ?? resolveCoachId(date, startTime, endTime, coaches, assignments);
 
     const block = dayBlocks.find((b) => blockAppliesToSlot(b, date, startTime, endTime, coachId));
+    const run = dayRuns.find((r) => runOccupiesSlot(r, date, startTime, endTime, coachId));
 
     if (toDateTime(date, startTime).getTime() < earliest) {
       state = 'past';
     } else if (booking) {
       state = 'booked';
+    } else if (run) {
+      // Le coach de ce créneau anime une sortie : il n'est pas au studio.
+      state = 'run';
     } else if (block) {
       state = 'blocked';
     }
 
     if (booking) bookingId = booking.id;
     if (block) blockId = block.id;
+    if (run) runId = run.id;
 
-    return { date, startTime, endTime, state, bookingId, blockId, coachId };
+    return { date, startTime, endTime, state, bookingId, blockId, runId, coachId };
   });
 }
 
@@ -159,7 +172,10 @@ export function occupancyRate(from: IsoDate, to: IsoDate, input: AvailabilityInp
   let date = from;
   while (date <= to) {
     const slots = computeDaySlots(date, { ...input, now: new Date(0) }); // ignore le passé
-    open += slots.filter((s) => s.state !== 'blocked').length;
+    // Un créneau bloqué ou consacré à une sortie n'était pas vendable : il ne
+    // compte pas au dénominateur, sinon le taux de remplissage punirait le
+    // studio d'avoir organisé un run gratuit.
+    open += slots.filter((s) => s.state !== 'blocked' && s.state !== 'run').length;
     taken += slots.filter((s) => s.state === 'booked').length;
     date = addDays(date, 1);
   }

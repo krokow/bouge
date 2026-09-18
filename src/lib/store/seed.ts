@@ -2,8 +2,11 @@ import { OFFERS } from '@/data/offers';
 import { ADMIN_ACCOUNT, SCHEDULE, TEAM_SEED } from '@/lib/config';
 import { addDays, addMinutesToTime, minutesToTime, timeToMinutes, todayIso, toDateTime, weekdayOf } from '@/lib/date';
 import { resolveCoachId } from '@/lib/coaches';
+import { RUN_CAPACITY } from '@/lib/runs';
 import type {
   Assignment,
+  RunSignup,
+  SocialRun,
   Block,
   Booking,
   Coach,
@@ -179,6 +182,23 @@ export function createSeedDatabase(today: IsoDate = todayIso()): DatabaseShape {
   const sarah = coaches.find((c) => c.slug === 'sarah-lemoine');
   const karim = coaches.find((c) => c.slug === 'karim-benali');
 
+  /* --- Dates des sorties collectives -------------------------------------- */
+  // Les runs se tiennent le samedi matin. Les affectations sont ensuite
+  // calées autour, de sorte qu'aucune ne recouvre un jour de sortie : sans
+  // cela, le créneau reviendrait à un autre coach et la sortie n'apparaîtrait
+  // pas dans le calendrier du gérant, où elle doit se voir.
+  const nextSaturday = (() => {
+    for (let i = 1; i <= 7; i += 1) {
+      if (weekdayOf(addDays(today, i)) === 6) return addDays(today, i);
+    }
+    return addDays(today, 6);
+  })();
+  const runDates = {
+    next: nextSaturday,
+    later: addDays(nextSaturday, 14),
+    past: addDays(nextSaturday, -14),
+  };
+
   /* --- Affectations ------------------------------------------------------ */
   // Ce que le gérant a décidé : hors de ces plages, c'est lui qui assure.
   const assignments: Assignment[] = [];
@@ -187,8 +207,8 @@ export function createSeedDatabase(today: IsoDate = todayIso()): DatabaseShape {
       id: 'asg_seed_1',
       coachId: sarah.id,
       type: 'range',
-      startDate: addDays(today, 1),
-      endDate: addDays(today, 12),
+      startDate: addDays(runDates.next, 1),
+      endDate: addDays(runDates.next, 10),
       note: 'Sarah prend les après-midis pendant ma formation',
       createdAt: now,
     });
@@ -198,8 +218,8 @@ export function createSeedDatabase(today: IsoDate = todayIso()): DatabaseShape {
       id: 'asg_seed_2',
       coachId: karim.id,
       type: 'day',
-      startDate: addDays(today, 5),
-      endDate: addDays(today, 5),
+      startDate: addDays(runDates.next, 3),
+      endDate: addDays(runDates.next, 3),
       note: 'Journée préparation physique',
       createdAt: now,
     });
@@ -209,8 +229,8 @@ export function createSeedDatabase(today: IsoDate = todayIso()): DatabaseShape {
       id: 'asg_seed_3',
       coachId: karim.id,
       type: 'slot',
-      startDate: addDays(today, 8),
-      endDate: addDays(today, 8),
+      startDate: addDays(runDates.next, 5),
+      endDate: addDays(runDates.next, 5),
       startTime: '18:00',
       endTime: '20:00',
       note: 'Suivi retour de blessure',
@@ -275,6 +295,70 @@ export function createSeedDatabase(today: IsoDate = todayIso()): DatabaseShape {
     }
   });
 
+  /* --- Runs : sorties collectives gratuites ------------------------------ */
+  // Deux dates à venir et une passée : de quoi montrer un bloc rempli sur le
+  // site, un run déjà complet, et de l'historique côté gérant.
+  const runs: SocialRun[] = [
+    {
+      id: 'run_seed_1',
+      coachId: owner.id,
+      date: runDates.next,
+      startTime: '09:00',
+      endTime: '10:00',
+      title: 'Run du samedi',
+      description:
+        'Une heure de course à allure conversation, puis étirements et café au studio. Tous niveaux — on ne laisse personne derrière.',
+      meetingPoint: 'Devant le studio, 8 rue Albert Simonin',
+      capacity: RUN_CAPACITY,
+      status: 'open',
+      createdAt: now,
+    },
+    {
+      id: 'run_seed_2',
+      coachId: owner.id,
+      date: runDates.later,
+      startTime: '09:00',
+      endTime: '10:00',
+      title: 'Run de la Défense',
+      description:
+        'Boucle urbaine autour de l’esplanade, rythme tranquille, une pause photo. On finit par boire un truc ensemble.',
+      meetingPoint: 'Parvis de La Défense, sous la Grande Arche',
+      capacity: RUN_CAPACITY,
+      status: 'open',
+      createdAt: now,
+    },
+    {
+      id: 'run_seed_3',
+      coachId: owner.id,
+      date: runDates.past,
+      startTime: '09:00',
+      endTime: '10:00',
+      title: 'Run du samedi',
+      description: 'Première sortie collective du studio.',
+      meetingPoint: 'Devant le studio, 8 rue Albert Simonin',
+      capacity: RUN_CAPACITY,
+      status: 'open',
+      createdAt: now,
+    },
+  ];
+
+  // Le premier run est presque plein, le second se remplit doucement : c'est
+  // ce contraste qui rend le bloc du site crédible.
+  const runSignups: RunSignup[] = [];
+  const fill = (runId: string, count: number) => {
+    clients.slice(0, count).forEach((client, i) => {
+      runSignups.push({
+        id: `rsg_seed_${runId}_${i}`,
+        runId,
+        userId: client.id,
+        createdAt: new Date(Date.now() - (i + 2) * 86_400_000).toISOString(),
+      });
+    });
+  };
+  fill('run_seed_1', 8);
+  fill('run_seed_2', 3);
+  fill('run_seed_3', RUN_CAPACITY);
+
   /* --- Réservations ------------------------------------------------------ */
   const bookings: Booking[] = [];
   const emails: EmailMessage[] = [];
@@ -295,6 +379,11 @@ export function createSeedDatabase(today: IsoDate = todayIso()): DatabaseShape {
     const seasonal = 0.55 + 0.45 * Math.sin((dayOffset + 70) / 9);
 
     for (const time of times) {
+      // Une sortie collective occupe le gérant : aucune séance ne peut être
+      // générée sur ce créneau, sinon la réservation masquerait la sortie
+      // dans le calendrier et les deux se contrediraient.
+      if (runs.some((r) => r.date === date && r.startTime === time)) continue;
+
       const chance = slotDesirability(time) * maturity * seasonal;
       if (random() > chance) continue;
 
@@ -357,6 +446,8 @@ export function createSeedDatabase(today: IsoDate = todayIso()): DatabaseShape {
     assignments,
     bookings,
     blocks,
+    runs,
+    runSignups,
     emails,
     session: null,
   };

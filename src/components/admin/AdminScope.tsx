@@ -61,6 +61,7 @@ export function AdminScopeProvider({
       blocks: full.blocks,
       coaches: full.coaches,
       assignments: full.assignments,
+      runs: full.runs,
     };
 
     if (!coach) {
