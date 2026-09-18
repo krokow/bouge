@@ -117,7 +117,7 @@ export function RunCard({
           /* Le formulaire s'affiche à la demande : des champs déroulés d'emblée
              sous chaque sortie noieraient les dates, qui sont l'information que
              le visiteur est venu chercher. */
-          <div className={`flex flex-col gap-4 rounded-2xl p-4 ${dark ? 'bg-anthracite-900' : 'bg-creme'}`}>
+          <div className="flex flex-col gap-4">
             <p className={`text-[length:var(--text-sm)] ${dark ? 'text-creme/75' : 'text-anthracite/70'}`}>
               C’est gratuit. Un compte suffit — il nous sert à vous prévenir si la sortie est annulée et à vous
               laisser vous désinscrire seul.
@@ -143,7 +143,10 @@ export function RunCard({
 function AuthTabs({ dark }: { dark: boolean }) {
   const [mode, setMode] = useState<'signup' | 'signin'>('signup');
   return (
-    <div className={`flex flex-col gap-4 ${dark ? '[&_span]:text-creme/70' : ''}`}>
+    /* Aucun ajustement « sombre » ici : les formulaires de compte portent leur
+       propre carte blanche. Un sélecteur `[&_span]` repeignait leurs libellés
+       en crème, donc en crème sur blanc — invisibles. */
+    <div className="flex flex-col gap-4">
       <div className={`flex gap-1.5 rounded-full p-1.5 ${dark ? 'bg-creme/10' : 'bg-anthracite/6'}`}>
         {(
           [

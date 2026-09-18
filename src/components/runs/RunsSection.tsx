@@ -114,7 +114,7 @@ export function RunsSection({
             <Empty dark={dark} />
           ) : (
             <>
-              <ul className="grid gap-4 md:grid-cols-2">
+              <ul className="grid items-start gap-4 md:grid-cols-2">
                 {shown.map(({ run, left, mine }, i) => (
                   <Reveal as="li" key={run.id} delay={i * 80} className="h-full">
                     <RunCard run={run} left={left} mine={mine} tone={dark ? 'dark' : 'light'} />
