@@ -77,9 +77,10 @@ export function HeroVideo() {
       )}
 
       {/* Voile de lisibilité : garantit le contraste du logo et du CTA
-          quel que soit le plan de la vidéo. */}
+          quel que soit le plan de la vidéo. Pas de texture de grain ici : en
+          mode `overlay` sur une vraie vidéo, elle délavait l'image en un voile
+          laiteux (retour client). */}
       <div className="u-hero-scrim absolute inset-0" />
-      <div className="u-grain absolute inset-0 opacity-60" />
     </div>
   );
 }
