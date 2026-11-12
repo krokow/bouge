@@ -8,9 +8,19 @@ import { asset } from '@/lib/config';
  *
  * La vidéo est chargée et jouée dans tous les cas, sans condition : c'est une
  * demande explicite du studio, la vidéo fait partie de l'identité du premier
- * écran. Les seuls replis restants sont ceux que le navigateur impose :
- * si la lecture automatique est refusée ou si le fichier ne charge pas,
- * l'affiche reste visible.
+ * écran.
+ *
+ * AUCUN CONTRÔLE, AUCUNE INTERACTION (demande client). Le mode économie
+ * d'énergie d'iOS interdit toute lecture automatique, sur tous les sites :
+ * aucune page ne peut passer outre. Safari affiche alors un bouton « lecture »
+ * sur la vidéo. Pour qu'il n'apparaisse jamais :
+ *   - la vidéo reste invisible tant qu'elle ne joue pas réellement (événement
+ *     `playing`, et non `canplay`) : on voit l'affiche, image fixe identique à
+ *     la première image de la boucle ;
+ *   - le bouton natif de WebKit est masqué en CSS (`.u-hero-video`) ;
+ *   - la vidéo ne reçoit aucun clic ni tap (`pointer-events: none`) ;
+ *   - la lecture est relancée au premier contact avec la page (tap, défilement
+ *     au doigt, clic, touche) : iOS l'autorise dès que l'utilisateur interagit.
  *
  * Deux fichiers : la version paysage 1920×1080 (2,9 Mo) et, pour les
  * téléphones tenus en portrait, une version recadrée en portrait 3:4 au centre
@@ -40,10 +50,25 @@ export function HeroVideo() {
   useEffect(() => {
     const video = videoRef.current;
     if (!video || !source) return;
-    // Certains navigateurs refusent la lecture automatique même en muet
-    // (économiseur de batterie iOS, réglage utilisateur) : l'affiche reste
-    // alors affichée, ce qui est le seul repli acceptable.
-    video.play().catch(() => undefined);
+    const tryPlay = () => {
+      if (video.paused) video.play().catch(() => undefined);
+    };
+    tryPlay();
+    // Lecture refusée (économie d'énergie iOS, réglage utilisateur) : nouvel
+    // essai au premier geste sur la page, n'importe où. Les écouteurs sont
+    // passifs et retirés dès que la vidéo joue.
+    const events = ['touchend', 'pointerdown', 'click', 'keydown', 'scroll'] as const;
+    events.forEach((e) => window.addEventListener(e, tryPlay, { passive: true }));
+    const stop = () => events.forEach((e) => window.removeEventListener(e, tryPlay));
+    video.addEventListener('playing', stop);
+    // Retour sur l'onglet : iOS met la vidéo en pause en arrière-plan.
+    const onVisible = () => document.visibilityState === 'visible' && tryPlay();
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      stop();
+      video.removeEventListener('playing', stop);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
   }, [source]);
 
   return (
@@ -66,11 +91,13 @@ export function HeroVideo() {
           loop
           playsInline
           preload="auto"
-          poster={asset('/media/hero-poster.webp')}
+          controls={false}
+          disablePictureInPicture
+          disableRemotePlayback
           aria-hidden="true"
           tabIndex={-1}
-          onCanPlay={() => setReady(true)}
-          className={`absolute inset-0 size-full object-cover transition-opacity duration-700 ${
+          onPlaying={() => setReady(true)}
+          className={`u-hero-video absolute inset-0 size-full object-cover transition-opacity duration-700 ${
             ready ? 'opacity-100' : 'opacity-0'
           }`}
         />

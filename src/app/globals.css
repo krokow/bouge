@@ -273,6 +273,24 @@
     }
   }
 
+  /* Vidéo du hero : décor pur, jamais de contrôle ni d'interaction. Le bouton
+     « lecture » que Safari iOS dessine quand la lecture automatique est
+     refusée (mode économie d'énergie) est masqué. */
+  .u-hero-video {
+    pointer-events: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+  }
+  .u-hero-video::-webkit-media-controls,
+  .u-hero-video::-webkit-media-controls-panel,
+  .u-hero-video::-webkit-media-controls-overlay-play-button,
+  .u-hero-video::-webkit-media-controls-start-playback-button {
+    display: none !important;
+    -webkit-appearance: none;
+    appearance: none;
+    opacity: 0 !important;
+  }
+
   /* Masque de lisibilité sous la vidéo du hero */
   .u-hero-scrim {
     background:

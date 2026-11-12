@@ -52,4 +52,46 @@ for (const [label, opts, expected] of [
   console.log(`  ${ok ? '✓' : '✗'} ${label.padEnd(22)} source demandée: ${requested}  lecture: ${st.t}s  opacité: ${st.opacity}`);
   await ctx.close();
 }
+// Économie d'énergie iOS : toute lecture sans geste de l'utilisateur est
+// refusée. Simulé en faisant échouer play() tant que la page n'a pas été
+// touchée. Attendu : vidéo invisible (donc aucun bouton « lecture »), affiche
+// visible, puis lecture dès le premier geste.
+{
+  const ctx = await b.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+  await ctx.addInitScript(() => {
+    let allowed = false;
+    for (const e of ['touchend', 'pointerdown', 'click']) window.addEventListener(e, () => { allowed = true; }, { capture: true });
+    // L'attribut autoplay est ignoré, comme sur iOS en économie d'énergie.
+    const setAttr = Element.prototype.setAttribute;
+    Element.prototype.setAttribute = function (n, v) {
+      if (this instanceof HTMLMediaElement && n.toLowerCase() === 'autoplay') return;
+      return setAttr.call(this, n, v);
+    };
+    Object.defineProperty(HTMLMediaElement.prototype, 'autoplay', { get: () => false, set: () => {} });
+    const play = HTMLMediaElement.prototype.play;
+    HTMLMediaElement.prototype.play = function () {
+      return allowed ? play.call(this) : Promise.reject(new DOMException('Low power mode', 'NotAllowedError'));
+    };
+  });
+  const p = await ctx.newPage();
+  await p.route('**/media/hero*.mp4', (route) => route.fulfill({ status: 200, headers: { 'content-type': 'video/webm' }, body: webm }));
+  await p.goto('http://localhost:4458/', { waitUntil: 'networkidle' });
+  await p.waitForTimeout(1500);
+  const state = () => p.evaluate(() => {
+    const v = document.querySelector('video');
+    return { paused: v.paused, opacity: getComputedStyle(v).opacity, pe: getComputedStyle(v).pointerEvents, controls: v.controls };
+  });
+  const before = await state();
+  const hidden = before.paused && before.opacity === '0' && before.pe === 'none' && !before.controls;
+  console.log(`  ${hidden ? '✓' : '✗'} économie d'énergie : vidéo masquée tant qu'elle ne joue pas (pause: ${before.paused}, opacité: ${before.opacity}, clics: ${before.pe})`);
+  // Tap sur le titre du hero, zone neutre (aucun lien).
+  const h = await p.locator('h1, h2').first().boundingBox();
+  await p.touchscreen.tap(h.x + 4, h.y + h.height / 2);
+  await p.waitForTimeout(1500);
+  const after = await state();
+  const started = !after.paused && after.opacity === '1';
+  console.log(`  ${started ? '✓' : '✗'} économie d'énergie : lecture au premier contact (pause: ${after.paused}, opacité: ${after.opacity})`);
+  await ctx.close();
+}
+
 await b.close(); server.close();
