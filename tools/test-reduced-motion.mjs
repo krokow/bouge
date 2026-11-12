@@ -9,7 +9,7 @@ import { serve } from './serve.mjs';
 const PORT = Number(process.env.TEST_PORT ?? 4333);
 const server = await serve(PORT);
 const browser = await chromium.launch({
-  executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome',
+  executablePath: '/opt/pw-browsers/chromium',
   args: ['--no-sandbox'],
 });
 

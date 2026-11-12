@@ -39,7 +39,7 @@ await mkdir(OUT_DIR, { recursive: true });
 const PORT = Number(process.env.SHOT_PORT ?? 4321);
 await new Promise((r) => server.listen(PORT, r));
 
-const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox'] });
+const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium', args: ['--no-sandbox'] });
 const name = page.replace(/\W+/g, '_') || 'home';
 const errors = [];
 

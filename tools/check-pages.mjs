@@ -13,7 +13,7 @@ const WIDTHS = [375, 430, 768, 1280, 1920];
 const HEIGHTS = { 375: 812, 430: 932, 768: 1024, 1280: 800, 1920: 1080 };
 
 const server = await serve(4321);
-const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox'] });
+const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium', args: ['--no-sandbox'] });
 let failures = 0;
 
 for (const width of WIDTHS) {

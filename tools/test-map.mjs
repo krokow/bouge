@@ -15,7 +15,7 @@ const S = '/tmp/claude-0/-home-user-bouge/2879e1ef-b665-5d5c-ab41-2642ce1b5820/s
 const tile = readFileSync(`${S}/tile.png`);
 const PORT = Number(process.env.TEST_PORT ?? 4334);
 const server = await serve(PORT);
-const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox'] });
+const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium', args: ['--no-sandbox'] });
 
 const step = (ok, label, detail = '') => console.log(`  ${ok ? '✓' : '✗'} ${label}${detail ? ' — ' + detail : ''}`);
 

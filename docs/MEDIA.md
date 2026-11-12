@@ -21,9 +21,20 @@ build prend les nouveaux fichiers.
 
 | Fichier | Format attendu | Poids conseillé | Rôle |
 |---|---|---|---|
-| `public/media/hero.mp4` | MP4 H.264, 1920×1080, muet | < 3 Mo | Écrans larges et tablettes |
-| `public/media/hero-mobile.mp4` | MP4 H.264, 640×360, muet | < 2 Mo | Téléphones (même cadrage, définition réduite) |
-| `public/media/hero-poster.webp` | WebP ou JPG, 1920×1080 | < 150 Ko | Image affichée avant la vidéo, et en mode économie de données |
+| `public/media/hero.mp4` | MP4 H.264, 1920×1080, muet | < 3 Mo | Ordinateurs, tablettes, téléphones en paysage |
+| `public/media/hero-mobile.mp4` | MP4 H.264, 540×720 (portrait 3:4, centre de l'image), muet | < 1,5 Mo | Téléphones tenus en portrait (≤ 700 px de large) |
+| `public/media/hero-poster.webp` | WebP, 1920×1080 | < 150 Ko | Image affichée avant le démarrage de la vidéo, et si la lecture automatique est refusée |
+
+Version en ligne (novembre 2026) : vidéo du studio livrée par le client
+(`video_client.mov`, 1920×1080, 14,4 s, 360 images, montage de plans courts).
+
+**La boucle démarre au plan des gainages en groupe (image 87, 3,48 s) et non au
+début du fichier** : le premier plan de la vidéo montre l'affiche « Bouge. »,
+que le logo du site recouvrait dès l'arrivée sur la page (deux logos
+superposés). Rien n'est coupé : les 87 premières images sont replacées à la
+fin. Les deux raccords tombent sur des coupes du montage, la boucle reste donc
+sans saut. L'affiche est cette même image 87 : le fondu de l'affiche vers la
+vidéo est invisible.
 
 ### Ce que doit contenir la vidéo
 
@@ -38,21 +49,31 @@ plan large du studio, qui sera de toute façon plus lisible en photo.
 À partir d'un rush `source.mov`, avec [ffmpeg](https://ffmpeg.org) :
 
 ```bash
-# Version paysage
-ffmpeg -i source.mov -t 12 -an \
-  -vf "scale=1920:1080:force_original_aspect_ratio=increase,crop=1920:1080" \
-  -c:v libx264 -preset slow -crf 26 -pix_fmt yuv420p -movflags +faststart \
+# Point de départ de la boucle (numéro d'image, à choisir sur une coupe)
+START=87
+ROT="[0:v]trim=start_frame=$START,setpts=PTS-STARTPTS[a];[0:v]trim=end_frame=$START,setpts=PTS-STARTPTS[b];[a][b]concat=n=2:v=1[r]"
+
+# Version paysage (1920×1080, ~2,9 Mo pour 14 s)
+ffmpeg -i source.mov -an -filter_complex "$ROT;[r]scale=1920:1080:flags=lanczos[o]" -map "[o]" \
+  -c:v libx264 -preset slow -crf 27 -maxrate 2200k -bufsize 4400k \
+  -profile:v high -level 4.0 -pix_fmt yuv420p -movflags +faststart -tag:v avc1 \
   public/media/hero.mp4
 
-# Version allégée, pour les téléphones (même cadrage, définition réduite :
-# recadrer en portrait à partir d'une source 720p reviendrait à l'agrandir)
-ffmpeg -i source.mov -an -vf "scale=640:360" \
-  -c:v libx264 -preset slow -crf 30 -maxrate 520k -bufsize 1040k \
-  -pix_fmt yuv420p -movflags +faststart public/media/hero-mobile.mp4
+# Version téléphone : recadrage portrait 3:4 au centre, à partir de la source
+# 1080p (c'est la zone qu'un écran vertical affiche de toute façon)
+ffmpeg -i source.mov -an -filter_complex "$ROT;[r]crop=810:1080,scale=540:720:flags=lanczos[o]" -map "[o]" \
+  -c:v libx264 -preset slow -crf 27 -maxrate 1100k -bufsize 2200k \
+  -profile:v high -level 3.1 -pix_fmt yuv420p -movflags +faststart -tag:v avc1 \
+  public/media/hero-mobile.mp4
 
-# Affiche (première image)
-ffmpeg -i public/media/hero.mp4 -frames:v 1 -q:v 3 public/media/hero-poster.webp
+# Affiche : la première image de la boucle
+ffmpeg -i source.mov -vf "select=eq(n\,$START)" -frames:v 1 -c:v libwebp -quality 78 \
+  public/media/hero-poster.webp
 ```
+
+La source (22 Mo) ne fait pas partie du site publié : seuls les trois fichiers
+encodés le sont. Elle reste récupérable dans l'historique git (commit « Add
+files via upload », novembre 2026).
 
 `-an` retire la piste audio : elle est inutile (la lecture est muette, condition
 imposée par les navigateurs pour l'autoplay) et alourdit le fichier.

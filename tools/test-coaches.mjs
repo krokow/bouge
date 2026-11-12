@@ -8,7 +8,7 @@ import { serve } from './serve.mjs';
 const width = Number(process.argv[2] ?? 1440);
 const PORT = Number(process.env.TEST_PORT ?? 4336);
 const server = await serve(PORT);
-const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox'] });
+const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium', args: ['--no-sandbox'] });
 const ctx = await browser.newContext({ viewport: { width, height: 900 }, locale: 'fr-FR' });
 const page = await ctx.newPage();
 const errors = [];

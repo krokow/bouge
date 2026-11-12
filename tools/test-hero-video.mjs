@@ -24,14 +24,15 @@ const S = '/tmp/claude-0/-home-user-bouge/2879e1ef-b665-5d5c-ab41-2642ce1b5820/s
 const webm = readFileSync(`${S}/hero-test.webm`);
 const server = await serve(4458);
 const b = await chromium.launch({
-  executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome',
+  executablePath: '/opt/pw-browsers/chromium',
   args: ['--no-sandbox', '--autoplay-policy=no-user-gesture-required'],
 });
 
-for (const [label, opts] of [
-  ['réglages standards', { viewport: { width: 1440, height: 900 } }],
-  ['animations réduites', { viewport: { width: 1440, height: 900 }, reducedMotion: 'reduce' }],
-  ['téléphone', { viewport: { width: 390, height: 844 } }],
+for (const [label, opts, expected] of [
+  ['réglages standards', { viewport: { width: 1440, height: 900 } }, 'hero.mp4'],
+  ['animations réduites', { viewport: { width: 1440, height: 900 }, reducedMotion: 'reduce' }, 'hero.mp4'],
+  ['téléphone', { viewport: { width: 390, height: 844 } }, 'hero-mobile.mp4'],
+  ['téléphone en paysage', { viewport: { width: 667, height: 375 } }, 'hero.mp4'],
 ]) {
   const ctx = await b.newContext(opts);
   const p = await ctx.newPage();
@@ -47,7 +48,7 @@ for (const [label, opts] of [
     const v = document.querySelector('video');
     return { paused: v.paused, t: Number(v.currentTime.toFixed(2)), ready: v.readyState, opacity: getComputedStyle(v).opacity };
   });
-  const ok = !st.paused && st.t > 0 && st.opacity === '1';
+  const ok = requested === expected && !st.paused && st.t > 0 && st.opacity === '1';
   console.log(`  ${ok ? '✓' : '✗'} ${label.padEnd(22)} source demandée: ${requested}  lecture: ${st.t}s  opacité: ${st.opacity}`);
   await ctx.close();
 }

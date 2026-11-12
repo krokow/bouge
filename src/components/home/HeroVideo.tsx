@@ -12,9 +12,12 @@ import { asset } from '@/lib/config';
  * si la lecture automatique est refusée ou si le fichier ne charge pas,
  * l'affiche reste visible.
  *
- * Deux définitions servies selon la largeur d'écran (même cadrage, 1,7 Mo sur
- * téléphone contre 5,9 Mo ailleurs) et `object-fit: cover` pour recadrer sans
- * jamais déformer l'image.
+ * Deux fichiers : la version paysage 1920×1080 (2,9 Mo) et, pour les
+ * téléphones tenus en portrait, une version recadrée en portrait 3:4 au centre
+ * (540×720, 0,8 Mo). `object-fit: cover` n'affiche de toute façon que le centre
+ * de l'image sur un écran vertical : la recadrer à l'encodage garde exactement
+ * ce qui est visible, en plus net et plus léger. Un téléphone en paysage reçoit
+ * la version paysage, qu'il afficherait sinon étirée.
  *
  * REMPLACEMENT : déposer la vidéo sous `public/media/hero.mp4`, puis
  * régénérer la version mobile et l'affiche — voir docs/MEDIA.md.
@@ -30,7 +33,7 @@ export function HeroVideo() {
   // retenir le mauvais fichier. La source est fixée une fois au montage : la
   // changer en cours de route relancerait la lecture depuis le début.
   useEffect(() => {
-    const small = window.matchMedia('(max-width: 700px)').matches;
+    const small = window.matchMedia('(max-width: 700px) and (orientation: portrait)').matches;
     setSource(asset(small ? '/media/hero-mobile.mp4' : '/media/hero.mp4'));
   }, []);
 
